@@ -1,0 +1,44 @@
+/* style toàn cục */
+.App {
+  text-align: center;
+}
+
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap");
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+    padding: 0 2%;
+  }
+  .content {
+    width: 100%;
+    padding: 20px;
+    text-align: center;
+  }
+  .logreg-box {
+    width: 100%;
+    max-width: 100%;
+    margin: 20px 0;
+  }
+  .navbar a {
+    margin-right: 15px;
+  }
+  .search-bar {
+    width: 150px;
+  }
+}
+
+.error {
+  color: red;
+  font-size: 12px;
+  margin-top: 5px;
+}
+
