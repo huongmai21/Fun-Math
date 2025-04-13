@@ -1,5 +1,4 @@
-const { models } = require("../models/mysql");
-const User = models.User;
+import User from '../models/User.js';
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const Joi = require("joi");

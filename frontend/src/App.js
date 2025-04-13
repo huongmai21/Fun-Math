@@ -9,7 +9,7 @@ import Navbar from "./components/Navbar/Navbar";
 import HomePage from "./pages/Home";
 import StudyCorner from "./pages/StudyCorner";
 import StudyRoom from "./pages/StudyRoom";
-import AuthForm from "./components/AuthForm/AuthForm";
+import AuthForm from "./components/Auth/AuthForm";
 import ExamList from "./components/Exam/ExamList";
 import CreateExam from "./components/Exam/CreateExam";
 import TakeExam from "./components/Exam/TakeExam";

@@ -1,0 +1,90 @@
+/* styles/Exam.css */
+.exam-list {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.exam-list h1 {
+  text-align: center;
+  color: #2c3e50;
+}
+
+.create-exam-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #3498db;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
+
+.exam-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.exam-card {
+  background: #f9f9f9;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.exam-card h3 {
+  margin: 0 0 10px;
+  color: #2c3e50;
+}
+
+.take-exam-btn {
+  padding: 8px 16px;
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.create-exam,
+.take-exam {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.question-block {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f0f0f0;
+  border-radius: 5px;
+}
+
+.question-block label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.question-block input,
+.question-block textarea,
+.question-block select {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.take-exam .question {
+  margin-bottom: 20px;
+}
+
+.take-exam button {
+  padding: 10px 20px;
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
