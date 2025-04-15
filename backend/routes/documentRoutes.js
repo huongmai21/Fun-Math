@@ -5,8 +5,8 @@ const documentController = require("../controllers/documentController");
 const authenticateToken = require("../middleware/authMiddleware");
 const checkRole = require("../middleware/roleMiddleware");
 
-router.get("/documents", documentController.getAllDocuments);
-router.get("/documents/:id", documentController.getDocumentById);
+router.get("/", documentController.getAllDocuments);
+router.get("/:id", documentController.getDocumentById);
 router.post(
   "/create",
   authenticateToken,
@@ -22,7 +22,7 @@ router.put(
 );
 
 router.delete(
-  "/documents/:id",
+  "/:id",
   authenticateToken,
   checkRole(["admin"]), 
   documentController.deleteDocument

@@ -4,7 +4,13 @@ const courseController = require("../controllers/courseController");
 const authenticateToken = require("../middleware/authMiddleware");
 const checkRole = require("../middleware/roleMiddleware");
 
-router.get("/", courseController.getAllcourse);
+// console.log("courseController.getAllCourses:", typeof courseController.getAllCourses);
+// console.log("courseController.getCourseById:", typeof courseController.getCourseById);
+// console.log("courseController.createCourse:", typeof courseController.createCourse);
+// console.log("courseController.updateCourse:", typeof courseController.updateCourse);
+// console.log("courseController.deleteCourse:", typeof courseController.deleteCourse);
+
+router.get("/", courseController.getAllCourses);
 router.get("/:id", courseController.getCourseById); // Sửa ở đây
 router.post(
   "/create",

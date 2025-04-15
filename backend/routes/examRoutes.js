@@ -19,7 +19,7 @@ router.get(
   examController.getExamById
 );
 router.post(
-  '/:id/submit',
+  '/submit/:id',
   authenticateToken,
   checkRole(['student']),
   examController.submitExam

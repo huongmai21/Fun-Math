@@ -35,23 +35,23 @@ const documentRoutes = require("./routes/documentRoutes");
 const courseRoutes = require("./routes/courseRoutes");
 const studyRoomRoutes = require("./routes/studyRoomRoutes");
 
-// Kiểm tra handler trước khi dùng
-console.log("authRoutes:", typeof authRoutes);
-// console.log("searchRoutes:", typeof searchRoutes);
-console.log("newsRoutes:", typeof newsRoutes);
-console.log("examRoutes:", typeof examRoutes);
-console.log("documentRoutes:", typeof documentRoutes);
-console.log("courseRoutes details:", courseRoutes);
-console.log("studyRoomRoutes:", typeof studyRoomRoutes);
+// // Kiểm tra handler trước khi dùng
+// console.log("authRoutes:", typeof authRoutes);
+// // console.log("searchRoutes:", typeof searchRoutes);
+// console.log("newsRoutes:", typeof newsRoutes);
+// console.log("examRoutes:", typeof examRoutes);
+// console.log("documentRoutes:", typeof documentRoutes);
+// console.log("courseRoutes details:", courseRoutes);
+// console.log("studyRoomRoutes:", typeof studyRoomRoutes);
 
 // Routes
-app.use("/api/auth", authRoutes);
+app.use("/auth", authRoutes);
 // app.use("/api/search", searchRoutes);
-app.use("/api/news", newsRoutes);
-app.use("/api/exams", examRoutes);
-app.use("/api/documents", documentRoutes);
-app.use("/api/courses", courseRoutes);
-app.use("/api/study-room", studyRoomRoutes);
+app.use("/news", newsRoutes);
+app.use("/exams", examRoutes);
+app.use("/documents", documentRoutes);
+app.use("/courses", courseRoutes);
+app.use("/study-room", studyRoomRoutes);
 
 // Xử lý tất cả các route để trả về index.html (cho React Router)
 app.get("*", (req, res) => {

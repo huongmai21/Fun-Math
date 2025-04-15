@@ -62,7 +62,7 @@ require("dotenv").config({ path: path.resolve(__dirname, ".env") });
 const PORT = process.env.PORT || 3000;
 
 // Kết nối với cơ sở dữ liệu
-connectDB();
+// connectDB();
 connectMongoDB();
 
 const server = app.listen(PORT, () => {
