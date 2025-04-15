@@ -1,5 +1,5 @@
 // controllers/newsController.js
-import News from '../models/News.js';
+const News = require('../models/News.js');
 
 // Lấy tất cả tin tức (phân trang)
 exports.getAllNews = async (req, res) => {

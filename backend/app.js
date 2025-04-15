@@ -26,13 +26,23 @@ app.use(express.urlencoded({ extended: true }));
 // Phục vụ các file tĩnh từ thư mục public
 app.use(express.static(path.join(__dirname, "..", "frontend", "public")));
 
+
 const authRoutes = require("./routes/authRoutes");
 // const searchRoutes = require("./routes/searchRoutes");
 const newsRoutes = require("./routes/newsRoutes");
 const examRoutes = require("./routes/examRoutes");
 const documentRoutes = require("./routes/documentRoutes");
-const coursesRoutes = require("./routes/coursesRoutes");
+const courseRoutes = require("./routes/courseRoutes");
 const studyRoomRoutes = require("./routes/studyRoomRoutes");
+
+// Kiểm tra handler trước khi dùng
+console.log("authRoutes:", typeof authRoutes);
+// console.log("searchRoutes:", typeof searchRoutes);
+console.log("newsRoutes:", typeof newsRoutes);
+console.log("examRoutes:", typeof examRoutes);
+console.log("documentRoutes:", typeof documentRoutes);
+console.log("courseRoutes details:", courseRoutes);
+console.log("studyRoomRoutes:", typeof studyRoomRoutes);
 
 // Routes
 app.use("/api/auth", authRoutes);
@@ -40,7 +50,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/news", newsRoutes);
 app.use("/api/exams", examRoutes);
 app.use("/api/documents", documentRoutes);
-app.use("/api/courses", coursesRoutes);
+app.use("/api/courses", courseRoutes);
 app.use("/api/study-room", studyRoomRoutes);
 
 // Xử lý tất cả các route để trả về index.html (cho React Router)
