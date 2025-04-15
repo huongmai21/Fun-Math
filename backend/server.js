@@ -1,7 +1,6 @@
 // server.js
 const app = require("./app");
 const connectMongoDB = require("./config/mongo");
-// const { sequelize, connectDB } = require("./models/mysql");
 const path = require("path");
 // const http = require("http");
 // const { Server } = require("socket.io");
@@ -39,30 +38,10 @@ require("dotenv").config({ path: path.resolve(__dirname, ".env") });
 // });
 
 
-// // Hàm khởi động server
-// const startServer = async () => {
-//   try {
-//     // Kết nối MongoDB và MySQL
-//     await Promise.all([connectMongoDB(), connectMySQL()]);
-
-//     const PORT = process.env.PORT || 3000;
-//     server.listen(PORT, () => {
-//       console.log(`Server đang chạy trên cổng ${PORT}`);
-//     });
-//   } catch (err) {
-//     console.error("Không thể khởi động server:", err);
-//     process.exit(1);
-//   }
-// };
-
-// // Khởi động server
-// startServer();
-
 
 const PORT = process.env.PORT || 3000;
 
 // Kết nối với cơ sở dữ liệu
-// connectDB();
 connectMongoDB();
 
 const server = app.listen(PORT, () => {

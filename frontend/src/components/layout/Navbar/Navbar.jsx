@@ -1,8 +1,8 @@
 // src/components/Navbar/Navbar.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { logout } from "../../features/auth/authSlice";
+// import { useDispatch, useSelector } from "react-redux";
+// import { logout } from "../../features/auth/authSlice";
 import { toast } from "react-toastify";
 import "./Navbar.css";
 
@@ -11,12 +11,12 @@ const Navbar = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isResourcesOpen, setIsResourcesOpen] = useState(false);
+  const [isDocumentsOpen, setIsDocumentsOpen] = useState(false);
   const [isNewsOpen, setIsNewsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const profileRef = useRef(null);
-  const resourcesRef = useRef(null);
+  const documentsRef = useRef(null);
   const newsRef = useRef(null);
 
   useEffect(() => {
@@ -24,8 +24,8 @@ const Navbar = () => {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setIsProfileOpen(false);
       }
-      if (resourcesRef.current && !resourcesRef.current.contains(event.target)) {
-        setIsResourcesOpen(false);
+      if (documentsRef.current && !documentsRef.current.contains(event.target)) {
+        setIsDocumentsOpen(false);
       }
       if (newsRef.current && !newsRef.current.contains(event.target)) {
         setIsNewsOpen(false);
@@ -62,25 +62,25 @@ const Navbar = () => {
         </button>
         <nav className={`navbar ${isMobileMenuOpen ? "active" : ""}`}>
           <div
-            className={`dropdown menu-item ${isResourcesOpen ? "active" : ""}`}
-            ref={resourcesRef}
-            onClick={() => setIsResourcesOpen(!isResourcesOpen)}
+            className={`dropdown menu-item ${isDocumentsOpen ? "active" : ""}`}
+            ref={documentsRef}
+            onClick={() => setIsDocumentsOpen(!isDocumentsOpen)}
           >
             <span className="dropdown-title">Tài liệu</span>
             <span className="left-icon"></span>
             <span className="right-icon"></span>
-            {isResourcesOpen && (
+            {isDocumentsOpen && (
               <div className="items">
-                <Link to="/resources/grade1" style={{ "--i": 1 }}>
+                <Link to="/documents/grade1" style={{ "--i": 1 }}>
                   <span></span>Cấp 1
                 </Link>
-                <Link to="/resources/grade2" style={{ "--i": 2 }}>
+                <Link to="/documents/grade2" style={{ "--i": 2 }}>
                   <span></span>Cấp 2
                 </Link>
-                <Link to="/resources/grade3" style={{ "--i": 3 }}>
+                <Link to="/documents/grade3" style={{ "--i": 3 }}>
                   <span></span>Cấp 3
                 </Link>
-                <Link to="/resources/university" style={{ "--i": 4 }}>
+                <Link to="/documents/university" style={{ "--i": 4 }}>
                   <span></span>Đại học
                 </Link>
               </div>

@@ -15,7 +15,7 @@ const TakeExam = () => {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    fetch(`http://localhost:3000/api/exams/${id}`, {
+    fetch(`http://localhost:3000/exams/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -38,7 +38,7 @@ const TakeExam = () => {
   const submitExam = async () => {
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch(`http://localhost:3000/api/exams/${id}/submit`, {
+      const response = await fetch(`http://localhost:3000/exams/${id}/submit`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

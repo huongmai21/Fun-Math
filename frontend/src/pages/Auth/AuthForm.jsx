@@ -1,9 +1,9 @@
 // src/components/AuthForm/AuthForm.jsx
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
+// import { useDispatch, useSelector } from "react-redux";
 // import { login, clearError } from "../../features/auth/authSlice";
-import { login } from '../../services/authService';
+// import { login } from '../../services/authService';
 // import { useAuth } from '../../hooks/useAuth';
 import "./LogReg.css";
 
@@ -46,7 +46,7 @@ const AuthForm = () => {
       }
     } else {
       try {
-        const response = await fetch("http://localhost:3000/api/auth/register", {
+        const response = await fetch("http://localhost:3000/auth/register", {
           method: "POST",
           body: JSON.stringify({
             username: formData.username,

@@ -5,7 +5,7 @@ const StudyCorner = () => {
   const [newQuestion, setNewQuestion] = useState({ title: "", content: "" });
 
   useEffect(() => {
-    fetch("/api/questions")
+    fetch("/questions")
       .then((res) => res.json())
       .then((data) => setQuestions(data))
       .catch((err) => console.error("Lỗi khi lấy câu hỏi:", err));
@@ -14,7 +14,7 @@ const StudyCorner = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
-    const res = await fetch("/api/questions", {
+    const res = await fetch("/questions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

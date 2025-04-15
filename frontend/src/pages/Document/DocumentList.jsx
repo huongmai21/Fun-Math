@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import './Resource.css';
+import './Document.css';
 
-const ResourceList = () => {
+const DocumentList = () => {
   const { grade } = useParams(); // grade: grade1, grade2, grade3, university
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,7 +17,7 @@ const ResourceList = () => {
       return;
     }
 
-    fetch(`http://localhost:3000/api/resources/${grade}`, {
+    fetch(`http://localhost:3000/documents/${grade}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -38,7 +38,7 @@ const ResourceList = () => {
     <div className="resource-list">
       <h1>Tài liệu {grade === 'grade1' ? 'Cấp 1' : grade === 'grade2' ? 'Cấp 2' : grade === 'grade3' ? 'Cấp 3' : 'Đại học'}</h1>
       {(user.role === 'admin' || user.role === 'teacher') && (
-        <Link to="/resources/create" className="create-resource-btn">
+        <Link to="/documents/create" className="create-resource-btn">
           Tạo tài liệu
         </Link>
       )}
@@ -54,7 +54,7 @@ const ResourceList = () => {
                 <h3>{resource.title}</h3>
                 <p>{resource.description || 'Không có mô tả'}</p>
                 <p>Ngày tạo: {new Date(resource.createdAt).toLocaleDateString()}</p>
-                <Link to={`/resources/detail/${resource.id}`} className="view-btn">
+                <Link to={`/documents/detail/${resource.id}`} className="view-btn">
                   Xem chi tiết
                 </Link>
               </div>
@@ -66,4 +66,4 @@ const ResourceList = () => {
   );
 };
 
-export default ResourceList;
+export default DocumentList;

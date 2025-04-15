@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import './Resource.css';
+import './Document.css';
 
-const ResourceDetail = () => {
+const DocumentDetail = () => {
   const { id } = useParams();
   const [resource, setResource] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -12,7 +12,7 @@ const ResourceDetail = () => {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    fetch(`http://localhost:3000/api/resources/detail/${id}`, {
+    fetch(`http://localhost:3000/documents/detail/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -40,11 +40,11 @@ const ResourceDetail = () => {
           Tải tài liệu
         </a>
       )}
-      <button onClick={() => navigate(`/resources/${resource.gradeLevel}`)} className="back-btn">
+      <button onClick={() => navigate(`/documents/${resource.gradeLevel}`)} className="back-btn">
         Quay lại
       </button>
     </div>
   );
 };
 
-export default ResourceDetail;
+export default DocumentDetail;

@@ -14,7 +14,7 @@ const News = () => {
     const fetchNews = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:3000/api/news', {
+        const response = await fetch('http://localhost:3000/news', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -46,7 +46,7 @@ const News = () => {
     try {
       const token = localStorage.getItem('token');
       const tagsArray = newNews.tags ? newNews.tags.split(',').map(tag => tag.trim()) : [];
-      const response = await fetch('http://localhost:3000/api/news', {
+      const response = await fetch('http://localhost:3000/news', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

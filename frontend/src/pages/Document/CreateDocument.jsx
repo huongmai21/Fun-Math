@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import './Resource.css';
+import './Document.css';
 
-const CreateResource = () => {
+const CreateDocument = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [gradeLevel, setGradeLevel] = useState('grade1');
@@ -25,7 +25,7 @@ const CreateResource = () => {
 
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch('http://localhost:3000/api/resources/create', {
+      const response = await fetch('http://localhost:3000/documents/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -42,8 +42,8 @@ const CreateResource = () => {
 
       const data = await response.json();
       if (response.ok) {
-        toast.success('Resource created successfully!');
-        navigate(`/resources/${gradeLevel}`);
+        toast.success('Document created successfully!');
+        navigate(`/documents/${gradeLevel}`);
       } else {
         toast.error(data.message || 'Error creating resource');
       }
@@ -109,4 +109,4 @@ const CreateResource = () => {
   );
 };
 
-export default CreateResource;
+export default CreateDocument;

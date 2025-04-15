@@ -10,7 +10,7 @@ const StudyRoom = () => {
   const [newMessage, setNewMessage] = useState("");
 
   useEffect(() => {
-    fetch("/api/chat-rooms")
+    fetch("/chat-rooms")
       .then((res) => res.json())
       .then((data) => setRooms(data))
       .catch((err) => console.error("Lỗi khi lấy danh sách phòng:", err));

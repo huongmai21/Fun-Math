@@ -1,24 +1,24 @@
 // src/App.jsx
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate } from "react-router-dom";
-import { Provider, useDispatch, useSelector } from "react-redux";
-import { refreshUser, logout } from "./features/auth/authSlice"; // Import logout
-import { store } from "./store";
+// import { Provider, useDispatch, useSelector } from "react-redux";
+// import { refreshUser, logout } from "./features/auth/authSlice"; // Import logout
+// import { store } from "./store";
 
-import Navbar from "./components/Navbar/Navbar";
-import HomePage from "./pages/Home";
-import StudyCorner from "./pages/StudyCorner";
-import StudyRoom from "./pages/StudyRoom";
-import AuthForm from "./components/Auth/AuthForm";
-import ExamList from "./components/Exam/ExamList";
-import CreateExam from "./components/Exam/CreateExam";
-import TakeExam from "./components/Exam/TakeExam";
-import ResourceList from "./components/Resource/ResourceList";
-import ResourceDetail from "./components/Resource/ResourceDetail";
-import CreateResource from "./components/Resource/CreateResource";
-import ErrorBoundary from "./components/ErrorBoundary";
-import NewsEducation from "./pages/NewsEducation";
-import NewsMagazine from "./pages/NewsMagazine";
+import Navbar from "./components/layout/Navbar/Navbar.jsx";
+import HomePage from "./pages/Home/Home.jsx";
+// import StudyCorner from "./pages/StudyCorner";
+import StudyRoom from "./pages/StudyRoom/StudyRoom.jsx";
+import AuthForm from "./pages/Auth/AuthForm.jsx";
+import ExamList from "./pages/Exams/ExamList.jsx";
+import CreateExam from "./pages/Exams/CreateExam.jsx";
+import TakeExam from "./pages/Exams/TakeExam.jsx";
+import DocumentList from "./pages/Document/DocumentList.jsx";
+import DocumentDetail from "./pages/Document/DocumentDetail.jsx";
+import CreateDocument from "./pages/Document/CreateDocument.jsx";
+import ErrorBoundary from "./components/common/ErrorBoundary.jsx";
+import NewsEducation from "./pages/News/NewsEducation.jsx";
+import NewsMagazine from "./pages/News/NewsMagazine.jsx";
 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -79,13 +79,13 @@ function App() {
             <Route path="login" element={<AuthForm isLogin={true} />} />
             <Route path="register" element={<AuthForm isLogin={false} />} />
           </Route>
-          <Route path="/resources/:grade" element={<ResourceList />} />
-          <Route path="/resources/detail/:id" element={<ResourceDetail />} />
+          <Route path="/documents/:grade" element={<DocumentList />} />
+          <Route path="/documents/detail/:id" element={<DocumentDetail />} />
           <Route
-            path="/resources/create"
+            path="/documents/create"
             element={
               <ProtectedRoute allowedRoles={["admin", "teacher"]}>
-                <CreateResource />
+                <CreateDocument />
               </ProtectedRoute>
             }
           />

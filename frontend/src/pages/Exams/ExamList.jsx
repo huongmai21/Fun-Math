@@ -12,7 +12,7 @@ const ExamList = () => {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    fetch('http://localhost:3000/api/exams/list', {
+    fetch('http://localhost:3000/exams/list', {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())

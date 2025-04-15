@@ -5,8 +5,8 @@ import { toast } from "react-toastify";
 import { io } from "socket.io-client";
 import { Helmet } from "react-helmet";
 import { motion } from "framer-motion";
-import SearchBar from "../components/Search/SearchBar"; // Import SearchBar
-import "../styles/HomePage.css";
+import SearchBar from "../../components/common/Search/SearchBar"; // Import SearchBar
+import "./HomePage.css";
 
 const HomePage = () => {
   const [news, setNews] = useState([]);
