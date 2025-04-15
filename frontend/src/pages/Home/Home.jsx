@@ -43,7 +43,7 @@ const HomePage = () => {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
-      fetch("http://localhost:3000/api/auth/me", {
+      fetch("http://localhost:3000/auth/me", {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then((res) => {
@@ -62,8 +62,8 @@ const HomePage = () => {
   useEffect(() => {
     setLoading(true);
     Promise.all([
-      fetch("http://localhost:3000/api/news?limit=3").then((res) => res.json()),
-      fetch("http://localhost:3000/api/courses?limit=3").then((res) => res.json()),
+      fetch("http://localhost:3000/news?limit=3").then((res) => res.json()),
+      fetch("http://localhost:3000/courses?limit=3").then((res) => res.json()),
     ])
       .then(([newsData, coursesData]) => {
         setNews(newsData);
@@ -182,10 +182,10 @@ const HomePage = () => {
         <h2>Tài liệu học tập</h2>
         <div className="resources-list">
           {[
-            { to: "/resources/grade1", label: "Cấp 1" },
-            { to: "/resources/grade2", label: "Cấp 2" },
-            { to: "/resources/grade3", label: "Cấp 3" },
-            { to: "/resources/university", label: "Đại học" },
+            { to: "/documents/grade1", label: "Cấp 1" },
+            { to: "/documents/grade2", label: "Cấp 2" },
+            { to: "/documents/grade3", label: "Cấp 3" },
+            { to: "/documents/university", label: "Đại học" },
             // { to: "/resources/textbooks", label: "Sách giáo khoa" },
             // { to: "/resources/exercises", label: "Sách bài tập" },
           ].map((item, index) => (

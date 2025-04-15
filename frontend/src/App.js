@@ -1,9 +1,9 @@
 // src/App.jsx
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate } from "react-router-dom";
-// import { Provider, useDispatch, useSelector } from "react-redux";
-// import { refreshUser, logout } from "./features/auth/authSlice"; // Import logout
-// import { store } from "./store";
+import { Provider, useDispatch, useSelector } from "react-redux";
+import { refreshUser, logout } from "./redux/authSlice.js"; // Import logout
+import { store } from "./redux/store.js";
 
 import Navbar from "./components/layout/Navbar/Navbar.jsx";
 import HomePage from "./pages/Home/Home.jsx";
@@ -79,7 +79,7 @@ function App() {
             <Route path="login" element={<AuthForm isLogin={true} />} />
             <Route path="register" element={<AuthForm isLogin={false} />} />
           </Route>
-          <Route path="/documents/:grade" element={<DocumentList />} />
+          <Route path="/documents/" element={<DocumentList />} />
           <Route path="/documents/detail/:id" element={<DocumentDetail />} />
           <Route
             path="/documents/create"
@@ -112,14 +112,6 @@ function App() {
             element={
               <ProtectedRoute>
                 <TakeExam />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/study-corner"
-            element={
-              <ProtectedRoute>
-                <StudyCorner />
               </ProtectedRoute>
             }
           />

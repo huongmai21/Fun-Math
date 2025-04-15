@@ -46,7 +46,7 @@ const studyRoomRoutes = require("./routes/studyRoomRoutes");
 
 // Routes
 app.use("/auth", authRoutes);
-// app.use("/api/search", searchRoutes);
+// app.use("/search", searchRoutes);
 app.use("/news", newsRoutes);
 app.use("/exams", examRoutes);
 app.use("/documents", documentRoutes);

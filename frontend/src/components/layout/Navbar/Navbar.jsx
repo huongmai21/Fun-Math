@@ -1,8 +1,8 @@
 // src/components/Navbar/Navbar.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-// import { useDispatch, useSelector } from "react-redux";
-// import { logout } from "../../features/auth/authSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { logout } from "../../../redux/authSlice";
 import { toast } from "react-toastify";
 import "./Navbar.css";
 
