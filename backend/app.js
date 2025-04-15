@@ -54,23 +54,24 @@ app.use("/courses", courseRoutes);
 app.use("/study-room", studyRoomRoutes);
 
 // Xử lý tất cả các route để trả về index.html (cho React Router)
-app.get("*", (req, res) => {
+app.get("/*", (req, res) => {
   res.sendFile(path.join(__dirname, "..", "frontend", "public", "index.html"));
 });
 
 
 // app.js (thêm trước module.exports)
 console.log("Registered routes:");
-app._router.stack.forEach((r) => {
-  if (r.route && r.route.path) {
-    console.log(`${r.route.path} [${Object.keys(r.route.methods).join(", ")}]`);
-  } else if (r.handle && r.handle.stack) {
-    r.handle.stack.forEach((subRoute) => {
-      if (subRoute.route && subRoute.route.path) {
-        console.log(`${r.regexp} -> ${subRoute.route.path} [${Object.keys(subRoute.route.methods).join(", ")}]`);
+app._router.stack.forEach((layer) => {
+  if (layer.route) {
+    console.log(`${layer.route.path} => [${Object.keys(layer.route.methods).join(", ")}]`);
+  } else if (layer.name === "router" && layer.handle.stack) {
+    layer.handle.stack.forEach((nested) => {
+      if (nested.route) {
+        console.log(`(nested) ${nested.route.path} => [${Object.keys(nested.route.methods).join(", ")}]`);
       }
     });
   }
 });
+
 
 module.exports = app;
