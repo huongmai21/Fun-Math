@@ -1,8 +1,8 @@
 // models/Article.js
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-const articleSchema = new Schema({
+const articleSchema = new mongoose.Schema({
   title: { type: String, required: true },
   content: { type: String, required: true },
   summary: { type: String },
@@ -16,4 +16,4 @@ const articleSchema = new Schema({
   citations: { type: Number, default: 0 }
 });
 
-export default mongoose.model('Article', articleSchema);
+module.exports = mongoose.model('Article', articleSchema);

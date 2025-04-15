@@ -1,8 +1,8 @@
 // models/Message.js
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-const messageSchema = new Schema({
+const messageSchema = new mongoose.Schema({
   content: { type: String, required: true },
   sender: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   room: { type: Schema.Types.ObjectId, ref: 'StudyRoom', required: true },
@@ -11,4 +11,4 @@ const messageSchema = new Schema({
   readBy: [{ type: Schema.Types.ObjectId, ref: 'User' }]
 });
 
-export default mongoose.model('Message', messageSchema);
+module.exports =  mongoose.model('Message', messageSchema);

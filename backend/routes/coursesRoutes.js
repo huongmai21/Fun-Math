@@ -1,7 +1,6 @@
 // routes/coursesRoutes.js
 const express = require("express");
 const router = express.Router();
-
 const mockCourses = [
   {
     id: 1,

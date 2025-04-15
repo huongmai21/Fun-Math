@@ -1,8 +1,8 @@
 // models/Post.js
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-const postSchema = new Schema({
+const postSchema = new mongoose.Schema({
   title: { type: String, required: true },
   content: { type: String, required: true },
   author: { type: Schema.Types.ObjectId, ref: 'User', required: true },
@@ -19,4 +19,4 @@ const postSchema = new Schema({
   isSolved: { type: Boolean, default: false } // For questions
 });
 
-export default mongoose.model('Post', postSchema);
+module.exports =  mongoose.model('Post', postSchema);

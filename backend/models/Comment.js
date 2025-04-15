@@ -1,8 +1,8 @@
 // models/Comment.js
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-const commentSchema = new Schema({
+const commentSchema = new mongoose.Schema({
   content: { type: String, required: true },
   author: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   post: { type: Schema.Types.ObjectId, ref: 'Post' },
@@ -14,4 +14,4 @@ const commentSchema = new Schema({
   isAcceptedAnswer: { type: Boolean, default: false } // For marking correct answers
 });
 
-export default mongoose.model('Comment', commentSchema);
+module.exports =  mongoose.model('Comment', commentSchema);

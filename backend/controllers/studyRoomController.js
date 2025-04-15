@@ -1,5 +1,5 @@
 // controllers/studyRoomController.js
-import StudyRoom from '../models/StudyRoom';
+const StudyRoom = require('../models/StudyRoom');
 
 exports.createStudyRoom = async (req, res) => {
   const { title } = req.body;

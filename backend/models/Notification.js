@@ -1,8 +1,8 @@
 // models/Notification.js
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-const notificationSchema = new Schema({
+const notificationSchema = new mongoose.Schema({
   recipient: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   sender: { type: Schema.Types.ObjectId, ref: 'User' },
   type: { 
@@ -31,4 +31,4 @@ const notificationSchema = new Schema({
 // Index để tăng tốc độ query thông báo chưa đọc
 notificationSchema.index({ recipient: 1, isRead: 1, createdAt: -1 });
 
-export default mongoose.model('Notification', notificationSchema);
+module.exports =  mongoose.model('Notification', notificationSchema);

@@ -1,8 +1,8 @@
 // models/News.js
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-const newsSchema = new Schema({
+const newsSchema = new mongoose.Schema({
   title: { type: String, required: true },
   content: { type: String, required: true },
   summary: { type: String },
@@ -15,4 +15,4 @@ const newsSchema = new Schema({
   views: { type: Number, default: 0 }
 });
 
-export default mongoose.model('News', newsSchema);
+module.exports =  mongoose.model('News', newsSchema);

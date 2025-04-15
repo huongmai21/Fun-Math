@@ -1,8 +1,8 @@
 // models/StudyRoom.js
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-const studyRoomSchema = new Schema({
+const studyRoomSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String },
   creator: { type: Schema.Types.ObjectId, ref: 'User', required: true },
@@ -15,4 +15,4 @@ const studyRoomSchema = new Schema({
   messages: [{ type: Schema.Types.ObjectId, ref: 'Message' }]
 });
 
-export default mongoose.model('StudyRoom', studyRoomSchema);
+module.exports =  mongoose.model('StudyRoom', studyRoomSchema);

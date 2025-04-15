@@ -1,7 +1,7 @@
 // server.js
 const app = require("./app");
 const connectMongoDB = require("./config/mongo");
-const { sequelize, connectDB } = require("./models/mysql");
+// const { sequelize, connectDB } = require("./models/mysql");
 const path = require("path");
 // const http = require("http");
 // const { Server } = require("socket.io");

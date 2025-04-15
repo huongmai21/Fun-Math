@@ -1,8 +1,8 @@
 // models/Document.js
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-const documentSchema = new Schema({
+const documentSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String },
   fileUrl: { type: String, required: true },
@@ -23,4 +23,4 @@ const documentSchema = new Schema({
   downloads: { type: Number, default: 0 }
 });
 
-export default mongoose.model('Document', documentSchema);
+module.exports =  mongoose.model('Document', documentSchema);

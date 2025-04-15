@@ -9,7 +9,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 router.post('/register', authController.register);
 router.post('/login', authController.login);
-router.get('/me', authenticateToken, authController.getMe); // Đảm bảo không có dấu ()
+router.get('/me', authenticateToken, authController.getMe); 
 router.put('/avatar', authenticateToken, upload.single('avatar'), authController.updateAvatar);
 
 module.exports = router;

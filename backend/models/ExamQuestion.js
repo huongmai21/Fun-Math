@@ -1,8 +1,8 @@
 // models/ExamQuestion.js
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-const examQuestionSchema = new Schema({
+const examQuestionSchema = new mongoose.Schema({
   questionText: { type: String, required: true },
   questionType: { 
     type: String, 
@@ -24,4 +24,4 @@ const examQuestionSchema = new Schema({
   createdBy: { type: Schema.Types.ObjectId, ref: 'User' }
 });
 
-export default mongoose.model('ExamQuestion', examQuestionSchema);
+module.exports =  mongoose.model('ExamQuestion', examQuestionSchema);
