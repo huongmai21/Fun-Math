@@ -1,108 +1,304 @@
-/* styles/Document.css */
-.resource-list {
+/* General container styles */
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  background-color: #f9f9f9;
+}
+
+/* Form styles for creating documents */
+.doc-form {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.doc-form h2 {
+  color: #1a73e8;
+  margin-bottom: 1.5rem;
+  font-size: 1.8rem;
+}
+
+.doc-form input,
+.doc-form textarea,
+.doc-form select {
+  width: 100%;
+  padding: 0.8rem;
+  margin-bottom: 1.2rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.doc-form input:focus,
+.doc-form textarea:focus,
+.doc-form select:focus {
+  outline: none;
+  border-color: #1a73e8;
+  box-shadow: 0 0 5px rgba(26, 115, 232, 0.2);
+}
+
+.doc-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.doc-form button {
+  background-color: #1a73e8;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.doc-form button:hover {
+  background-color: #1557b0;
+  transform: scale(1.02);
+}
+
+/* Document detail styles */
+.document-detail {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.document-detail h2 {
+  color: #1a73e8;
+  margin-bottom: 1.5rem;
+}
+
+.document-meta {
+  background-color: #f0f4ff;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.document-meta p {
+  margin: 0.5rem 0;
+  color: #333;
+}
+
+.document-meta strong {
+  color: #1a73e8;
+}
+
+.document-detail img {
+  max-width: 100%;
+  margin: 1.5rem 0;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.document-detail img:hover {
+  transform: scale(1.02);
+}
+
+.document-description {
+  line-height: 1.6;
+  color: #555;
+}
+
+.download-button {
+  display: inline-block;
+  padding: 0.8rem 1.5rem;
+  background-color: #ff6f61;
+  color: white;
+  border-radius: 8px;
+  text-decoration: none;
+  margin-top: 1.5rem;
+  font-weight: 600;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.download-button:hover {
+  background-color: #e65b50;
+  transform: scale(1.02);
+}
+
+/* Document list styles */
+.doclist-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 2rem 1rem;
 }
 
-.resource-list h1 {
-  text-align: center;
-  color: #2c3e50;
+.doclist-container h2 {
+  color: #1a73e8;
+  margin-bottom: 2rem;
+  font-size: 1.8rem;
 }
 
-.create-resource-btn {
-  display: inline-block;
-  padding: 10px 20px;
-  background-color: #3498db;
-  color: white;
-  text-decoration: none;
-  border-radius: 5px;
-  margin-bottom: 20px;
+.filters {
+  display: flex;
+  gap: 1.2rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
 }
 
-.resource-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-}
-
-.resource-card {
-  background: #f9f9f9;
-  padding: 20px;
+.filters select {
+  padding: 0.8rem;
   border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.resource-card h3 {
-  margin: 0 0 10px;
-  color: #2c3e50;
-}
-
-.view-btn {
-  display: inline-block;
-  padding: 8px 16px;
-  background-color: #27ae60;
-  color: white;
-  text-decoration: none;
-  border-radius: 5px;
-}
-
-.resource-detail {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.resource-detail .content {
-  margin: 20px 0;
-  line-height: 1.6;
-}
-
-.download-btn {
-  display: inline-block;
-  padding: 10px 20px;
-  background-color: #e74c3c;
-  color: white;
-  text-decoration: none;
-  border-radius: 5px;
-  margin-bottom: 20px;
-}
-
-.back-btn {
-  padding: 10px 20px;
-  background-color: #7f8c8d;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.create-resource {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.create-resource label {
-  display: block;
-  margin-bottom: 5px;
-}
-
-.create-resource input,
-.create-resource textarea,
-.create-resource select {
-  width: 100%;
-  padding: 8px;
-  margin-bottom: 10px;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  font-size: 1rem;
+  background-color: white;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  min-width: 200px;
 }
 
-.create-resource button {
-  padding: 10px 20px;
-  background-color: #3498db;
-  color: white;
+.filters select:focus {
+  outline: none;
+  border-color: #1a73e8;
+  box-shadow: 0 0 5px rgba(26, 115, 232, 0.2);
+}
+
+.doc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.doc-card {
   border: none;
-  border-radius: 5px;
-  cursor: pointer;
+  border-radius: 10px;
+  padding: 1.5rem;
+  background-color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.doc-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.doc-card img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  transition: transform 0.3s ease;
+}
+
+.doc-card img:hover {
+  transform: scale(1.03);
+}
+
+.doc-card h4 {
+  margin: 0.5rem 0;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.doc-card p {
+  font-size: 0.95rem;
+  color: #666;
+  flex-grow: 1;
+  margin-bottom: 1rem;
+}
+
+.view-link {
+  margin-top: 0.8rem;
+  display: inline-block;
+  font-weight: 600;
+  color: #1a73e8;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.view-link:hover {
+  color: #1557b0;
+  text-decoration: underline;
+}
+
+/* Related documents styles */
+.related-docs {
+  margin-top: 2rem;
+}
+
+.related-docs h3 {
+  color: #1a73e8;
+  margin-bottom: 1rem;
+}
+
+.related-docs ul {
+  list-style: none;
+  padding: 0;
+}
+
+.related-docs li {
+  margin-bottom: 0.8rem;
+}
+
+.related-docs a {
+  color: #333;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.related-docs a:hover {
+  color: #1a73e8;
+  text-decoration: underline;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .doc-form,
+  .document-detail {
+    padding: 1.5rem;
+  }
+
+  .filters {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .filters select {
+    min-width: 100%;
+  }
+
+  .doc-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+
+  .doc-card {
+    padding: 1rem;
+  }
+
+  .doc-card img {
+    height: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .doclist-container h2,
+  .doc-form h2,
+  .document-detail h2 {
+    font-size: 1.5rem;
+  }
+
+  .doc-card h4 {
+    font-size: 1rem;
+  }
+
+  .doc-card p {
+    font-size: 0.9rem;
+  }
 }

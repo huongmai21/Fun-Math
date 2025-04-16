@@ -5,7 +5,7 @@ const examController = require('../controllers/examController');
 const authenticateToken = require('../middleware/authMiddleware');
 const checkRole = require('../middleware/roleMiddleware');
 
-router.get('/list', authenticateToken, examController.getAllExams);
+router.get('/', authenticateToken, examController.getAllExams);
 router.post(
   '/create',
   authenticateToken,

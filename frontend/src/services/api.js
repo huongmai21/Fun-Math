@@ -22,4 +22,13 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Thêm interceptor để xử lý lỗi
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const message = error.response?.data?.message || "Có lỗi xảy ra. Vui lòng thử lại.";
+    return Promise.reject({ message });
+  }
+);
+
 export default api;

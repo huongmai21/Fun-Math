@@ -1,17 +1,16 @@
 // controllers/documentController.js
 const Document = require('../models/Document');
 
-// Lấy tất cả tài liệu (có lọc và phân trang)
 exports.getAllDocuments = async (req, res) => {
   try {
-    const { educationLevel, subject, documentType, search } = req.query;
+    const { educationLevel, grade, subject, documentType, search } = req.query;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 12;
     const skip = (page - 1) * limit;
 
-    // Xây dựng query
     let query = {};
     if (educationLevel) query.educationLevel = educationLevel;
+    if (grade) query.grade = grade;
     if (subject) query.subject = subject;
     if (documentType) query.documentType = documentType;
     if (search) {
@@ -47,7 +46,6 @@ exports.getAllDocuments = async (req, res) => {
   }
 };
 
-// Lấy chi tiết một tài liệu
 exports.getDocumentById = async (req, res) => {
   try {
     const document = await Document.findById(req.params.id)
@@ -60,7 +58,6 @@ exports.getDocumentById = async (req, res) => {
       });
     }
 
-    // Tăng số lượt tải
     document.downloads += 1;
     await document.save();
 
@@ -77,10 +74,8 @@ exports.getDocumentById = async (req, res) => {
   }
 };
 
-// Tạo tài liệu mới (admin và giáo viên)
 exports.createDocument = async (req, res) => {
   try {
-    // Kiểm tra quyền hạn
     if (req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
@@ -88,7 +83,7 @@ exports.createDocument = async (req, res) => {
       });
     }
 
-    const { title, description, fileUrl, thumbnail, educationLevel, subject, documentType, tags } = req.body;
+    const { title, description, fileUrl, thumbnail, educationLevel, grade, subject, documentType, tags } = req.body;
     
     const newDocument = new Document({
       title,
@@ -97,7 +92,8 @@ exports.createDocument = async (req, res) => {
       thumbnail,
       author: req.user.id,
       educationLevel,
-      subject,
+      grade,
+      subject: subject || "math",
       documentType,
       tags
     });
@@ -118,10 +114,9 @@ exports.createDocument = async (req, res) => {
   }
 };
 
-// Cập nhật tài liệu
 exports.updateDocument = async (req, res) => {
   try {
-    const { title, description, fileUrl, thumbnail, educationLevel, subject, documentType, tags } = req.body;
+    const { title, description, fileUrl, thumbnail, educationLevel, grade, subject, documentType, tags } = req.body;
     
     const document = await Document.findById(req.params.id);
     if (!document) {
@@ -131,7 +126,6 @@ exports.updateDocument = async (req, res) => {
       });
     }
 
-    // Kiểm tra quyền sửa tài liệu
     if (document.author.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
@@ -147,6 +141,7 @@ exports.updateDocument = async (req, res) => {
         fileUrl,
         thumbnail,
         educationLevel,
+        grade,
         subject,
         documentType,
         tags,
@@ -169,7 +164,6 @@ exports.updateDocument = async (req, res) => {
   }
 };
 
-// Xóa tài liệu
 exports.deleteDocument = async (req, res) => {
   try {
     const document = await Document.findById(req.params.id);
@@ -180,7 +174,6 @@ exports.deleteDocument = async (req, res) => {
       });
     }
 
-    // Kiểm tra quyền xóa tài liệu
     if (document.author.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,

@@ -6,6 +6,7 @@ import { io } from "socket.io-client";
 import { Helmet } from "react-helmet";
 import { motion } from "framer-motion";
 import SearchBar from "../../components/common/Search/SearchBar"; // Import SearchBar
+import Footer  from "../../components/layout/Footer/Footer";
 import "./HomePage.css";
 
 const HomePage = () => {
@@ -186,8 +187,6 @@ const HomePage = () => {
             { to: "/documents/grade2", label: "Cấp 2" },
             { to: "/documents/grade3", label: "Cấp 3" },
             { to: "/documents/university", label: "Đại học" },
-            // { to: "/resources/textbooks", label: "Sách giáo khoa" },
-            // { to: "/resources/exercises", label: "Sách bài tập" },
           ].map((item, index) => (
             <motion.div
               key={item.to}
@@ -259,7 +258,7 @@ const HomePage = () => {
         viewport={{ once: true }}
         variants={sectionVariants}
       >
-        <h2>Thi đấu và hoạt động</h2>
+        <h2>Thi đấu và học tập</h2>
         <div className="activities-list">
           <motion.div
             className="activity-item"
@@ -336,31 +335,7 @@ const HomePage = () => {
           )}
         </div>
       </motion.section>
-
-      {/* Footer */}
-      <motion.footer
-        className="footer"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        variants={sectionVariants}
-      >
-        <p>© 2025 FunMath. All rights reserved.</p>
-        <div className="social-links">
-          <a href="https://www.linkedin.com" target="_blank" rel="noopener noreferrer">
-            <i className="fab fa-linkedin"></i>
-          </a>
-          <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer">
-            <i className="fab fa-facebook-square"></i>
-          </a>
-          <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer">
-            <i className="fab fa-instagram"></i>
-          </a>
-          <a href="https://www.twitter.com" target="_blank" rel="noopener noreferrer">
-            <i className="fab fa-twitter"></i>
-          </a>
-        </div>
-      </motion.footer>
+      <Footer/>
     </div>
   );
 };

@@ -16,12 +16,12 @@ const authenticateToken = async (req, res, next) => {
       next();
     } catch (error) {
       console.error(error);
-      res.status(401).json({ message: "Không được phép, token không hợp lệ" });
+      return res.status(401).json({ message: "Không được phép, token không hợp lệ" });
     }
   }
 
   if (!token) {
-    res.status(401).json({ message: "Không được phép, không có token" });
+    return res.status(401).json({ message: "Không được phép, không có token" });
   }
 };
 

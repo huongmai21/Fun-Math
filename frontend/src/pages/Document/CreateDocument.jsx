@@ -1,108 +1,159 @@
-// components/CreateResource.jsx
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import './Document.css';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { createDocument } from "../../services/documentService";
+import "./Document.css";
+
+const gradeMap = {
+  primary: ["1", "2", "3", "4", "5"],
+  secondary: ["6", "7", "8", "9"],
+  highschool: ["10", "11", "12"],
+};
+
+const universitySubjects = [
+  { value: "advanced_math", label: "Toán cao cấp" },
+  { value: "calculus", label: "Giải tích" },
+  { value: "algebra", label: "Đại số" },
+  { value: "probability_statistics", label: "Xác suất thống kê" },
+  { value: "differential_equations", label: "Phương trình vi phân" },
+];
 
 const CreateDocument = () => {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [gradeLevel, setGradeLevel] = useState('grade1');
-  const [content, setContent] = useState('');
-  const [fileUrl, setFileUrl] = useState('');
   const navigate = useNavigate();
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    fileUrl: "",
+    thumbnail: "",
+    educationLevel: "primary",
+    grade: "",
+    subject: "",
+    documentType: "textbook",
+    tags: "",
+  });
 
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  useEffect(() => {
-    if (!user || !['admin', 'teacher'].includes(user.role)) {
-      toast.error('You do not have permission to access this page');
-      navigate('/exams');
-    }
-  }, [user, navigate]);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => {
+      const updatedForm = { ...prev, [name]: value };
+      if (name === "educationLevel") {
+        updatedForm.grade = "";
+        updatedForm.subject = "";
+      }
+      return updatedForm;
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const token = localStorage.getItem('token');
     try {
-      const response = await fetch('http://localhost:3000/documents/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          title,
-          description,
-          gradeLevel,
-          content,
-          fileUrl,
-        }),
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        toast.success('Document created successfully!');
-        navigate(`/documents/${gradeLevel}`);
-      } else {
-        toast.error(data.message || 'Error creating resource');
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error('Server error');
+      const tagArray = form.tags.split(",").map((tag) => tag.trim());
+      const payload = {
+        ...form,
+        tags: tagArray,
+        grade: form.educationLevel !== "university" ? form.grade : undefined,
+        subject: form.educationLevel === "university" ? form.subject : "math",
+      };
+      await createDocument(payload);
+      alert("Tạo tài liệu thành công!");
+      navigate("/resources/grade1");
+    } catch (error) {
+      console.error(error);
+      alert("Tạo thất bại!");
     }
   };
 
-  if (!user || !['admin', 'teacher'].includes(user.role)) {
-    return null;
-  }
-
   return (
-    <div className="create-resource">
-      <h1>Tạo tài liệu</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Tiêu đề:</label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+    <div className="create-doc container">
+      <h2>Tạo Tài Liệu Mới</h2>
+      <form onSubmit={handleSubmit} className="doc-form">
+        <input
+          type="text"
+          name="title"
+          placeholder="Tiêu đề"
+          value={form.title}
+          onChange={handleChange}
+          required
+        />
+
+        <textarea
+          name="description"
+          placeholder="Mô tả"
+          value={form.description}
+          onChange={handleChange}
+        />
+
+        <input
+          type="text"
+          name="fileUrl"
+          placeholder="Link tài liệu (fileUrl)"
+          value={form.fileUrl}
+          onChange={handleChange}
+          required
+        />
+
+        <input
+          type="text"
+          name="thumbnail"
+          placeholder="Link ảnh thumbnail"
+          value={form.thumbnail}
+          onChange={handleChange}
+        />
+
+        <select
+          name="educationLevel"
+          value={form.educationLevel}
+          onChange={handleChange}
+        >
+          <option value="primary">Cấp 1</option>
+          <option value="secondary">Cấp 2</option>
+          <option value="highschool">Cấp 3</option>
+          <option value="university">Đại học</option>
+        </select>
+
+        {form.educationLevel === "university" ? (
+          <select
+            name="subject"
+            value={form.subject}
+            onChange={handleChange}
             required
-          />
-        </div>
-        <div>
-          <label>Mô tả:</label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </div>
-        <div>
-          <label>Cấp học:</label>
-          <select value={gradeLevel} onChange={(e) => setGradeLevel(e.target.value)}>
-            <option value="grade1">Cấp 1</option>
-            <option value="grade2">Cấp 2</option>
-            <option value="grade3">Cấp 3</option>
-            <option value="university">Đại học</option>
+          >
+            <option value="">-- Chọn môn học --</option>
+            {universitySubjects.map((subject) => (
+              <option key={subject.value} value={subject.value}>
+                {subject.label}
+              </option>
+            ))}
           </select>
-        </div>
-        <div>
-          <label>Nội dung:</label>
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            rows="10"
-          />
-        </div>
-        <div>
-          <label>Link tải file (nếu có):</label>
-          <input
-            type="text"
-            value={fileUrl}
-            onChange={(e) => setFileUrl(e.target.value)}
-            placeholder="https://example.com/file.pdf"
-          />
-        </div>
+        ) : (
+          <select name="grade" value={form.grade} onChange={handleChange} required>
+            <option value="">-- Chọn lớp --</option>
+            {gradeMap[form.educationLevel]?.map((grade) => (
+              <option key={grade} value={grade}>
+                Lớp {grade}
+              </option>
+            ))}
+          </select>
+        )}
+
+        <select
+          name="documentType"
+          value={form.documentType}
+          onChange={handleChange}
+        >
+          <option value="textbook">Giáo trình</option>
+          <option value="exercise">Bài tập</option>
+          <option value="reference">Tham khảo</option>
+          <option value="other">Khác</option>
+        </select>
+
+        <input
+          type="text"
+          name="tags"
+          placeholder="Tags (cách nhau bởi dấu phẩy)"
+          value={form.tags}
+          onChange={handleChange}
+        />
+
         <button type="submit">Tạo tài liệu</button>
       </form>
     </div>

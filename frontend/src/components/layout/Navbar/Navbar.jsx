@@ -1,23 +1,37 @@
-// src/components/Navbar/Navbar.jsx
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../../../redux/authSlice";
 import { toast } from "react-toastify";
+import { ThemeContext } from "../../../context/ThemeContext";
 import "./Navbar.css";
 
 const Navbar = () => {
   const { user, loading } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useContext(ThemeContext); // Sử dụng ThemeContext
+
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isDocumentsOpen, setIsDocumentsOpen] = useState(false);
   const [isNewsOpen, setIsNewsOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const profileRef = useRef(null);
   const documentsRef = useRef(null);
   const newsRef = useRef(null);
+  const notificationsRef = useRef(null);
+
+  const [notifications, setNotifications] = useState([
+    { id: 1, message: "Bài đăng mới từ bạn bè!", time: "5 phút trước" },
+    { id: 2, message: "Đề thi mới đã có!", time: "1 giờ trước" },
+  ]);
+
+  const handleDeleteNotification = (id) => {
+    setNotifications(notifications.filter((notif) => notif.id !== id));
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -29,6 +43,9 @@ const Navbar = () => {
       }
       if (newsRef.current && !newsRef.current.contains(event.target)) {
         setIsNewsOpen(false);
+      }
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+        setIsNotificationsOpen(false);
       }
     };
 
@@ -120,55 +137,107 @@ const Navbar = () => {
       {loading ? (
         <div className="loading">Đang tải...</div>
       ) : user ? (
-        <div
-          className="profile-container"
-          ref={profileRef}
-          onClick={() => setIsProfileOpen(!isProfileOpen)}
-        >
-          <div className="profile-info">
-            <img
-              src={user.avatar || "/assets/images/default-avatar.png"}
-              alt="Avatar"
-              className="profile-avatar"
-            />
-            <span className="profile-username">{user.username}</span>
+        <div className="user-actions">
+          <div
+            className="notification-container"
+            ref={notificationsRef}
+            onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+          >
+            <i className="fa-solid fa-bell notification-icon"></i>
+            {notifications.length > 0 && (
+              <span className="notification-count">{notifications.length}</span>
+            )}
+            {isNotificationsOpen && (
+              <div className="notification-dropdown">
+                {notifications.length > 0 ? (
+                  notifications.map((notif) => (
+                    <div key={notif.id} className="notification-item">
+                      <span>{notif.message}</span>
+                      <span className="notification-time">{notif.time}</span>
+                      <button
+                        className="delete-notification"
+                        onClick={() => handleDeleteNotification(notif.id)}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <div className="notification-item">Không có thông báo</div>
+                )}
+              </div>
+            )}
           </div>
-          {isProfileOpen && (
-            <div className="profile-dropdown">
-              <Link to="/profile" className="dropdown-item">
-                Hồ sơ
-              </Link>
-              <Link to="/settings" className="dropdown-item">
-                Cài đặt
-              </Link>
-              {(user.role === "student" || user.role === "teacher") && (
-                <Link to="/exam-history" className="dropdown-item">
-                  Đề thi đã tham gia
+          <div className="settings-container">
+            <i
+              className="fa-solid fa-gear settings-icon"
+              onClick={() => setIsSettingsOpen(true)}
+            ></i>
+            {isSettingsOpen && (
+              <div className="settings-modal">
+                <div className="settings-content">
+                  <h3>Cài đặt</h3>
+                  <div className="settings-option">
+                    <label>Thông báo</label>
+                    <input type="checkbox" defaultChecked />
+                  </div>
+                  <div className="settings-option">
+                    <label>Chế độ hiển thị</label>
+                    <button className="theme-toggle" onClick={toggleTheme}>
+                      <i
+                        className={
+                          theme === "light"
+                            ? "fa-solid fa-sun"
+                            : "fa-solid fa-moon"
+                        }
+                      ></i>
+                      {theme === "light" ? "Sáng" : "Tối"}
+                    </button>
+                  </div>
+                  <button
+                    className="close-settings"
+                    onClick={() => setIsSettingsOpen(false)}
+                  >
+                    Đóng
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          <div
+            className="profile-container"
+            ref={profileRef}
+            onClick={() => setIsProfileOpen(!isProfileOpen)}
+          >
+            <div className="profile-info">
+              <img
+                src={user.avatar || "/assets/images/default-avatar.png"}
+                alt="Avatar"
+                className="profile-avatar"
+              />
+              <span className="profile-username">{user.username}</span>
+            </div>
+            {isProfileOpen && (
+              <div className="profile-dropdown">
+                <Link to="/users/profile" className="dropdown-item">
+                  Hồ sơ
                 </Link>
-              )}
-              {user.role === "teacher" && (
-                <Link to="/create-exam" className="dropdown-item">
-                  Tạo đề thi
-                </Link>
-              )}
-              {user.role === "admin" && (
-                <>
-                  <Link to="/create-exam" className="dropdown-item">
-                    Tạo đề thi
+                {(user?.role === "student" || user?.role === "teacher") && (
+                  <Link to="/my-courses" className="dropdown-item">
+                    Khóa học của tôi
                   </Link>
-                  <Link to="/create-course" className="dropdown-item">
-                    Tạo khóa học
-                  </Link>
+                )}
+                {user?.role === "admin" && (
                   <Link to="/admin" className="dropdown-item">
                     Quản lý hệ thống
                   </Link>
-                </>
-              )}
-              <button onClick={handleLogout} className="dropdown-item logout">
-                Đăng xuất
-              </button>
-            </div>
-          )}
+                )}
+                <button onClick={handleLogout} className="dropdown-item logout">
+                  Đăng xuất
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         <div className="auth-links">

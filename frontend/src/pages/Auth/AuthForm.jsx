@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { login, clearError } from "../../redux/authSlice";
+import {refreshUser, login, clearError } from "../../redux/authSlice";
+
 // import { login } from '../../services/authService';
 // import { useAuth } from '../../hooks/useAuth';
 import "./LogReg.css";
@@ -40,6 +41,8 @@ const AuthForm = () => {
     if (isLogin) {
       try {
         await dispatch(login({ email: formData.email, password: formData.password })).unwrap();
+        await dispatch(refreshUser()).unwrap(); // 👈 gọi lại để đảm bảo user được cập nhật chuẩn
+
         navigate("/");
       } catch (err) {
         // Error đã được xử lý trong slice

@@ -99,3 +99,10 @@ frontend/
 
 - **Tạo các thư mục cần thiết**
     mkdir assets assets/images assets/styles components components/common components/layout context hooks pages pages/Home pages/Auth services utils constants
+
+
+# Một số Công nghệ sử dụng
+
+**1. Redux**
+- store.js: cấu hình Redux Store
+- authSlice.js: 
