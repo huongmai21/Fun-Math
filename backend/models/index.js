@@ -12,6 +12,7 @@ import StudyRoom from './StudyRoom.js';
 import Message from './Message.js';
 import Course from './Course.js';
 import Notification from './Notification.js';
+import Follow from './Follow.js';
 
 export {
   User,
@@ -26,5 +27,6 @@ export {
   StudyRoom,
   Message,
   Course,
-  Notification
+  Notification,
+  Follow
 };

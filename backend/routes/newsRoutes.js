@@ -4,8 +4,8 @@ const newsController = require("../controllers/newsController");
 const authenticateToken = require("../middleware/authMiddleware");
 const checkRole = require("../middleware/roleMiddleware");
 
-router.get("/list", newsController.getAllNews);
-router.get("/new/:id", newsController.getNewsById);
+router.get("/", newsController.getAllNews);
+router.get("/:id", newsController.getNewsById);
 router.post(
   "/create",
   authenticateToken,

@@ -197,3 +197,50 @@ exports.unfollowUser = async (req, res) => {
     res.status(500).json({ message: "Lỗi server" });
   }
 };
+
+// Lấy dữ liệu hoạt động của người dùng theo năm
+exports.getUserActivity = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const year = parseInt(req.params.year);
+
+    const startDate = new Date(year, 0, 1);
+    const endDate = new Date(year + 1, 0, 1);
+
+    const activities = await UserActivity.find({
+      userId,
+      createdAt: {
+        $gte: startDate,
+        $lt: endDate,
+      },
+    });
+
+    // Nhóm hoạt động theo ngày
+    const activityMap = {};
+    activities.forEach((activity) => {
+      const dateStr = activity.createdAt.toISOString().split("T")[0];
+      if (!activityMap[dateStr]) {
+        activityMap[dateStr] = {
+          date: dateStr,
+          count: 0,
+          details: [],
+        };
+      }
+      activityMap[dateStr].count += 1;
+      activityMap[dateStr].details.push({
+        type: activity.type,
+        description: activity.description,
+      });
+    });
+
+    const activityData = Object.values(activityMap);
+    const total = activities.length;
+
+    res.status(200).json({
+      activity: activityData,
+      total,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Không thể lấy dữ liệu hoạt động", error: err.message });
+  }
+};

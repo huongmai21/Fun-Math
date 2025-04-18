@@ -1,17 +1,35 @@
-import React, { useState, useEffect} from "react";
+import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom"; // Thêm useNavigate để chuyển hướng
-// import { ThemeContext } from "../../context/ThemeContext";
-import api from "../../services/api";
-import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 import ReactPaginate from "react-paginate";
+import { Tooltip } from "react-tooltip"; // Import Tooltip
 import CommentSection from "../../components/common/Comment/CommentSection";
+import {
+  fetchProfile,
+  fetchFollowers,
+  fetchFollowing,
+  followUser,
+  unfollowUser,
+  fetchStudentStats,
+  fetchTeacherStats,
+  fetchSystemStats,
+  fetchAllUsers,
+  deleteUser,
+  updateProfile,
+  updateAvatar,
+  fetchUserActivity,
+} from "../../services/userService";
+import { fetchPosts, deletePost, editPost } from "../../services/postService";
+import { fetchCourses, fetchAllCourses, deleteCourse } from "../../services/courseService";
+import { fetchLibrary, uploadDocument, deleteDocument, editDocument } from "../../services/libraryService";
+import { createExam } from "../../services/examService";
+import { postNews } from "../../services/newsService";
+import { toast } from "react-toastify";
 import "./Profile.css";
 
 const Profile = () => {
   const { user } = useSelector((state) => state.auth);
-  const navigate = useNavigate(); // Hook để chuyển hướng
-  // const { /* theme */ } = useContext(ThemeContext);
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [profileData, setProfileData] = useState(null);
   const [followers, setFollowers] = useState({ data: [], total: 0, page: 1 });
@@ -22,6 +40,9 @@ const Profile = () => {
   const [stats, setStats] = useState(null);
   const [allCourses, setAllCourses] = useState({ data: [], total: 0, page: 1 });
   const [allUsers, setAllUsers] = useState({ data: [], total: 0, page: 1 });
+  const [activityData, setActivityData] = useState({ activity: [], total: 0 });
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editingItem, setEditingItem] = useState(null);
   const itemsPerPage = 10;
@@ -53,12 +74,10 @@ const Profile = () => {
     ],
   };
 
-  // Kiểm tra user trước khi truy cập role
   const sidebarTabs = user
     ? [...commonTabs, ...(roleTabs[user.role] || [])]
-    : commonTabs; // Nếu user là null, chỉ hiển thị commonTabs
+    : commonTabs;
 
-  // Chuyển hướng nếu user chưa đăng nhập
   useEffect(() => {
     if (!user) {
       toast.error("Vui lòng đăng nhập để xem hồ sơ!");
@@ -68,198 +87,287 @@ const Profile = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!user) return; // Thoát nếu user là null
+      if (!user) return;
 
       try {
         setLoading(true);
 
-        const profileRes = await api.get("/users/profile");
-        setProfileData(profileRes.data);
+        const profile = await fetchProfile();
+        setProfileData(profile);
 
         if (user.role === "student") {
-          const statsRes = await api.get("/stats/student");
-          setStats(statsRes.data);
+          const stats = await fetchStudentStats();
+          setStats(stats);
         } else if (user.role === "teacher") {
-          const statsRes = await api.get("/stats/teacher");
-          setStats(statsRes.data);
+          const stats = await fetchTeacherStats();
+          setStats(stats);
         } else if (user.role === "admin") {
-          const statsRes = await api.get("/stats/system");
-          setStats(statsRes.data);
+          const stats = await fetchSystemStats();
+          setStats(stats);
         }
 
-        await fetchFollowers(1);
-        await fetchFollowing(1);
-        await fetchPosts(1);
-        await fetchLibrary(1);
+        await fetchFollowersData(1);
+        await fetchFollowingData(1);
+        await fetchPostsData(1);
+        await fetchLibraryData(1);
         if (user.role === "student") {
-          await fetchCourses(1, "enrolled");
+          await fetchCoursesData(1, "enrolled");
         } else if (user.role === "teacher") {
-          await fetchCourses(1, "created");
+          await fetchCoursesData(1, "created");
         }
         if (user.role === "admin") {
-          await fetchAllCourses(1);
-          await fetchAllUsers(1);
+          await fetchAllCoursesData(1);
+          await fetchAllUsersData(1);
         }
+
+        const activity = await fetchUserActivity(selectedYear);
+        setActivityData(activity);
       } catch (err) {
-        toast.error(err.message);
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [user]); // Thêm user vào dependency array
+  }, [user, selectedYear]);
 
-  const fetchFollowers = async (page) => {
-    try {
-      const res = await api.get("/users/followers", {
-        params: { page, limit: itemsPerPage },
-      });
-      setFollowers({ data: res.data.data, total: res.data.total, page });
-    } catch (err) {
-      toast.error(err.message);
-    }
+  const fetchFollowersData = async (page) => {
+    const data = await fetchFollowers(page, itemsPerPage);
+    setFollowers({ data: data.data, total: data.total, page });
   };
 
-  const fetchFollowing = async (page) => {
-    try {
-      const res = await api.get("/users/friends", {
-        params: { page, limit: itemsPerPage },
-      });
-      setFollowing({ data: res.data.data, total: res.data.total, page });
-    } catch (err) {
-      toast.error(err.message);
-    }
+  const fetchFollowingData = async (page) => {
+    const data = await fetchFollowing(page, itemsPerPage);
+    setFollowing({ data: data.data, total: data.total, page });
   };
 
-  const fetchPosts = async (page) => {
-    try {
-      const res = await api.get("/posts", {
-        params: { page, limit: itemsPerPage },
-      });
-      setPosts({ data: res.data.data, total: res.data.total, page });
-    } catch (err) {
-      toast.error(err.message);
-    }
+  const fetchPostsData = async (page) => {
+    const data = await fetchPosts(page, itemsPerPage);
+    setPosts({ data: data.data, total: data.total, page });
   };
 
-  const fetchLibrary = async (page) => {
-    try {
-      const res = await api.get("/library", {
-        params: { page, limit: itemsPerPage },
-      });
-      setLibrary({ data: res.data.data, total: res.data.total, page });
-    } catch (err) {
-      toast.error(err.message);
-    }
+  const fetchLibraryData = async (page) => {
+    const data = await fetchLibrary(page, itemsPerPage);
+    setLibrary({ data: data.data, total: data.total, page });
   };
 
-  const fetchCourses = async (page, type) => {
-    try {
-      const res = await api.get(`/courses/${type}`, {
-        params: { page, limit: itemsPerPage },
-      });
-      setCourses({ data: res.data.data, total: res.data.total, page });
-    } catch (err) {
-      toast.error(err.message);
-    }
+  const fetchCoursesData = async (page, type) => {
+    const data = await fetchCourses(type, page, itemsPerPage);
+    setCourses({ data: data.data, total: data.total, page });
   };
 
-  const fetchAllCourses = async (page) => {
-    try {
-      const res = await api.get("/courses/all", {
-        params: { page, limit: itemsPerPage },
-      });
-      setAllCourses({ data: res.data.data, total: res.data.total, page });
-    } catch (err) {
-      toast.error(err.message);
-    }
+  const fetchAllCoursesData = async (page) => {
+    const data = await fetchAllCourses(page, itemsPerPage);
+    setAllCourses({ data: data.data, total: data.total, page });
   };
 
-  const fetchAllUsers = async (page) => {
-    try {
-      const res = await api.get("/users/all", {
-        params: { page, limit: itemsPerPage },
-      });
-      setAllUsers({ data: res.data.data, total: res.data.total, page });
-    } catch (err) {
-      toast.error(err.message);
-    }
+  const fetchAllUsersData = async (page) => {
+    const data = await fetchAllUsers(page, itemsPerPage);
+    setAllUsers({ data: data.data, total: data.total, page });
   };
 
   const handleFollow = async (targetUserId) => {
-    try {
-      await api.post(`/users/follow/${targetUserId}`);
-      toast.success("Theo dõi thành công!");
-      const profileRes = await api.get("/users/profile");
-      setProfileData(profileRes.data);
-      await fetchFollowing(following.page);
-      await fetchFollowers(followers.page);
-    } catch (err) {
-      toast.error(err.message);
-    }
+    await followUser(targetUserId);
+    toast.success("Theo dõi thành công!");
+    const profile = await fetchProfile();
+    setProfileData(profile);
+    await fetchFollowingData(following.page);
+    await fetchFollowersData(followers.page);
   };
 
   const handleUnfollow = async (targetUserId) => {
-    try {
-      await api.post(`/users/unfollow/${targetUserId}`);
-      toast.success("Bỏ theo dõi thành công!");
-      const profileRes = await api.get("/users/profile");
-      setProfileData(profileRes.data);
-      await fetchFollowing(following.page);
-      await fetchFollowers(followers.page);
-    } catch (err) {
-      toast.error(err.message);
-    }
+    await unfollowUser(targetUserId);
+    toast.success("Bỏ theo dõi thành công!");
+    const profile = await fetchProfile();
+    setProfileData(profile);
+    await fetchFollowingData(following.page);
+    await fetchFollowersData(followers.page);
   };
 
   const handleCreateExam = async (examData) => {
-    try {
-      await api.post("/exams", examData);
-      toast.success("Tạo đề thi thành công!");
-    } catch (err) {
-      toast.error(err.message);
-    }
+    await createExam(examData);
+    toast.success("Tạo đề thi thành công!");
   };
 
-  const handleUploadDoc = async (docData) => {
-    try {
-      await api.post("/library", docData);
-      toast.success("Tải tài liệu thành công!");
-      await fetchLibrary(1);
-    } catch (err) {
-      toast.error(err.message);
-    }
+  const handleUploadDoc = async (formData) => {
+    await uploadDocument(formData);
+    toast.success("Tải tài liệu thành công!");
+    await fetchLibraryData(1);
   };
 
   const handlePostNews = async (newsData) => {
-    try {
-      await api.post("/news", newsData);
-      toast.success("Đăng tin tức thành công!");
-    } catch (err) {
-      toast.error(err.message);
-    }
+    await postNews(newsData);
+    toast.success("Đăng tin tức thành công!");
   };
 
   const handleDelete = async (type, id, fetchFunction, page) => {
-    try {
-      await api.delete(`/${type}/${id}`);
-      toast.success("Xóa thành công!");
-      await fetchFunction(page);
-    } catch (err) {
-      toast.error(err.message);
+    if (type === "posts") {
+      await deletePost(id);
+    } else if (type === "courses") {
+      await deleteCourse(id);
+    } else if (type === "library") {
+      await deleteDocument(id);
+    } else if (type === "users") {
+      await deleteUser(id);
     }
+    toast.success("Xóa thành công!");
+    await fetchFunction(page);
   };
 
   const handleEdit = async (type, id, data, fetchFunction, page) => {
-    try {
-      await api.put(`/${type}/${id}`, data);
-      toast.success("Chỉnh sửa thành công!");
-      setEditingItem(null);
-      await fetchFunction(page);
-    } catch (err) {
-      toast.error(err.message);
+    if (type === "posts") {
+      await editPost(id, data);
+    } else if (type === "library") {
+      await editDocument(id, data);
     }
+    toast.success("Chỉnh sửa thành công!");
+    setEditingItem(null);
+    await fetchFunction(page);
+  };
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    const username = e.target.username.value;
+    const email = e.target.email.value;
+    const bio = e.target.bio.value;
+    const data = { username, email, bio };
+    await updateProfile(data);
+    toast.success("Cập nhật thông tin thành công!");
+    const profile = await fetchProfile();
+    setProfileData(profile);
+    setIsEditingProfile(false);
+  };
+
+  const handleUpdateAvatar = async (e) => {
+    e.preventDefault();
+    const file = e.target.avatar.files[0];
+    const formData = new FormData();
+    formData.append("avatar", file);
+    await updateAvatar(formData);
+    toast.success("Cập nhật ảnh avatar thành công!");
+    const profile = await fetchProfile();
+    setProfileData(profile);
+  };
+
+  const renderActivityGraph = () => {
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+    const days = ["", "Mon", "", "Wed", "", "Fri", ""];
+    const startDate = new Date(selectedYear, 0, 1);
+    const endDate = new Date(selectedYear, 11, 31);
+    const daysInYear = (endDate - startDate) / (1000 * 60 * 60 * 24) + 1;
+    const weeks = Math.ceil(daysInYear / 7);
+    const activityMap = {};
+
+    activityData.activity.forEach(({ date, count, details }) => {
+      activityMap[date] = { count, details };
+    });
+
+    const squares = [];
+    let currentDate = new Date(startDate);
+    const monthPositions = [];
+
+    for (let week = 0; week < weeks; week++) {
+      const weekSquares = [];
+      const currentMonth = currentDate.getMonth();
+      if (
+        week === 0 ||
+        (currentDate.getDate() <= 7 && currentMonth !== new Date(currentDate).setDate(currentDate.getDate() - 7).getMonth())
+      ) {
+        monthPositions.push({ week, month: months[currentMonth] });
+      }
+
+      for (let day = 0; day < 7; day++) {
+        if (currentDate.getFullYear() !== selectedYear) break;
+        const dateStr = currentDate.toISOString().split("T")[0];
+        const activity = activityMap[dateStr] || { count: 0, details: [] };
+        const count = activity.count;
+        let colorClass = "activity-square level-0";
+        if (count > 0 && count <= 2) colorClass = "activity-square level-1";
+        else if (count > 2 && count <= 5) colorClass = "activity-square level-2";
+        else if (count > 5) colorClass = "activity-square level-3";
+
+        weekSquares.push(
+          <div
+            key={dateStr}
+            className={colorClass}
+            data-tooltip-id={`tooltip-${dateStr}`}
+            data-tooltip-content={
+              count > 0
+                ? `${dateStr}: ${count} hoạt động\n${activity.details
+                    .map((d) => d.description)
+                    .join("\n")}`
+                : `${dateStr}: Không có hoạt động`
+            }
+          ></div>
+        );
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      squares.push(
+        <div key={week} className="activity-week">
+          {weekSquares}
+        </div>
+      );
+    }
+
+    return (
+      <div className="activity-graph">
+        <div className="activity-header">
+          <h3>{activityData.total} hoạt động trong năm {selectedYear}</h3>
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+          >
+            <option value={2023}>2023</option>
+            <option value={2024}>2024</option>
+            <option value={2025}>2025</option>
+          </select>
+        </div>
+        <div className="activity-labels">
+          {monthPositions.map((pos) => (
+            <span
+              key={pos.week}
+              className="month-label"
+              style={{ position: "absolute", left: `${pos.week * 14}px` }}
+            >
+              {pos.month}
+            </span>
+          ))}
+        </div>
+        <div className="activity-days">
+          {days.map((day, index) => (
+            <span key={index}>{day}</span>
+          ))}
+        </div>
+        <div className="activity-grid">{squares}</div>
+        <div className="activity-legend">
+          <span>Ít</span>
+          <div className="activity-square level-0"></div>
+          <div className="activity-square level-1"></div>
+          <div className="activity-square level-2"></div>
+          <div className="activity-square level-3"></div>
+          <span>Nhiêu</span>
+        </div>
+        <Tooltip
+          id="activity-tooltip"
+          place="top"
+          style={{ whiteSpace: "pre-line", zIndex: 1000 }}
+        />
+      </div>
+    );
   };
 
   const renderContent = () => {
@@ -276,22 +384,85 @@ const Profile = () => {
                 className="user-avatar"
               />
               <div className="user-details">
-                <h2>{profileData?.username || "Người dùng"}</h2>
-                <p>{profileData?.email}</p>
-                <p>
-                  <strong>Người theo dõi:</strong> {profileData?.followers || 0}
-                </p>
-                <p>
-                  <strong>Đang theo dõi:</strong> {profileData?.following || 0}
-                </p>
-                <p>
-                  <strong>Trạng thái:</strong>{" "}
-                  <span className={`status ${profileData?.isActive ? "active" : "inactive"}`}>
-                    {profileData?.isActive ? "Đang hoạt động" : "Không hoạt động"}
-                  </span>
-                </p>
+                {isEditingProfile ? (
+                  <form onSubmit={handleUpdateProfile}>
+                    <div className="form-group">
+                      <label>Tên người dùng:</label>
+                      <input
+                        type="text"
+                        name="username"
+                        defaultValue={profileData?.username}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Email:</label>
+                      <input
+                        type="email"
+                        name="email"
+                        defaultValue={profileData?.email}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Tiểu sử:</label>
+                      <textarea
+                        name="bio"
+                        defaultValue={profileData?.bio || ""}
+                        rows="3"
+                      ></textarea>
+                    </div>
+                    <button type="submit">Lưu</button>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingProfile(false)}
+                    >
+                      Hủy
+                    </button>
+                  </form>
+                ) : (
+                  <>
+                    <h2>{profileData?.username || "Người dùng"}</h2>
+                    <p>{profileData?.email}</p>
+                    <p>{profileData?.bio || "Chưa có tiểu sử"}</p>
+                    <p>
+                      <strong>Người theo dõi:</strong>{" "}
+                      {profileData?.followers || 0}
+                    </p>
+                    <p>
+                      <strong>Đang theo dõi:</strong>{" "}
+                      {profileData?.following || 0}
+                    </p>
+                    <p>
+                      <strong>Trạng thái:</strong>{" "}
+                      <span
+                        className={`status ${
+                          profileData?.isActive ? "active" : "inactive"
+                        }`}
+                      >
+                        {profileData?.isActive
+                          ? "Đang hoạt động"
+                          : "Không hoạt động"}
+                      </span>
+                    </p>
+                    <button
+                      className="action-btn edit"
+                      onClick={() => setIsEditingProfile(true)}
+                    >
+                      Chỉnh sửa thông tin
+                    </button>
+                  </>
+                )}
+                <form onSubmit={handleUpdateAvatar}>
+                  <div className="form-group">
+                    <label>Thay đổi ảnh avatar:</label>
+                    <input type="file" name="avatar" accept="image/*" required />
+                  </div>
+                  <button type="submit">Cập nhật avatar</button>
+                </form>
               </div>
             </div>
+            {renderActivityGraph()}
           </div>
         );
       case "stats":
@@ -332,12 +503,19 @@ const Profile = () => {
                 <ul>
                   {library.data.map((doc) => (
                     <li key={doc.id}>
-                      {editingItem?.type === "library" && editingItem?.id === doc.id ? (
+                      {editingItem?.type === "library" &&
+                      editingItem?.id === doc.id ? (
                         <form
                           onSubmit={(e) => {
                             e.preventDefault();
                             const title = e.target.title.value;
-                            handleEdit("library", doc.id, { title }, fetchLibrary, library.page);
+                            handleEdit(
+                              "library",
+                              doc.id,
+                              { title },
+                              fetchLibraryData,
+                              library.page
+                            );
                           }}
                         >
                           <input
@@ -347,25 +525,41 @@ const Profile = () => {
                             required
                           />
                           <button type="submit">Lưu</button>
-                          <button type="button" onClick={() => setEditingItem(null)}>
+                          <button
+                            type="button"
+                            onClick={() => setEditingItem(null)}
+                          >
                             Hủy
                           </button>
                         </form>
                       ) : (
                         <>
-                          <a href={doc.url} target="_blank" rel="noopener noreferrer">
+                          <a
+                            href={doc.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
                             {doc.title}
                           </a>{" "}
                           - {new Date(doc.createdAt).toLocaleDateString()}
                           <button
                             className="action-btn edit"
-                            onClick={() => setEditingItem({ type: "library", id: doc.id })}
+                            onClick={() =>
+                              setEditingItem({ type: "library", id: doc.id })
+                            }
                           >
                             Sửa
                           </button>
                           <button
                             className="action-btn delete"
-                            onClick={() => handleDelete("library", doc.id, fetchLibrary, library.page)}
+                            onClick={() =>
+                              handleDelete(
+                                "library",
+                                doc.id,
+                                fetchLibraryData,
+                                library.page
+                              )
+                            }
                           >
                             Xóa
                           </button>
@@ -377,7 +571,7 @@ const Profile = () => {
                 <ReactPaginate
                   breakLabel="..."
                   nextLabel="Tiếp >"
-                  onPageChange={(event) => fetchLibrary(event.selected + 1)}
+                  onPageChange={(event) => fetchLibraryData(event.selected + 1)}
                   pageRangeDisplayed={5}
                   pageCount={Math.ceil(library.total / itemsPerPage)}
                   previousLabel="< Trước"
@@ -401,7 +595,9 @@ const Profile = () => {
                   {followers.data.map((follower) => (
                     <li key={follower._id}>
                       <img
-                        src={follower.avatar || "/assets/images/default-avatar.png"}
+                        src={
+                          follower.avatar || "/assets/images/default-avatar.png"
+                        }
                         alt="Avatar"
                         className="friend-avatar"
                       />
@@ -427,7 +623,7 @@ const Profile = () => {
                 <ReactPaginate
                   breakLabel="..."
                   nextLabel="Tiếp >"
-                  onPageChange={(event) => fetchFollowers(event.selected + 1)}
+                  onPageChange={(event) => fetchFollowersData(event.selected + 1)}
                   pageRangeDisplayed={5}
                   pageCount={Math.ceil(followers.total / itemsPerPage)}
                   previousLabel="< Trước"
@@ -468,7 +664,7 @@ const Profile = () => {
                 <ReactPaginate
                   breakLabel="..."
                   nextLabel="Tiếp >"
-                  onPageChange={(event) => fetchFollowing(event.selected + 1)}
+                  onPageChange={(event) => fetchFollowingData(event.selected + 1)}
                   pageRangeDisplayed={5}
                   pageCount={Math.ceil(following.total / itemsPerPage)}
                   previousLabel="< Trước"
@@ -491,13 +687,20 @@ const Profile = () => {
                 <ul>
                   {posts.data.map((post) => (
                     <li key={post.id}>
-                      {editingItem?.type === "posts" && editingItem?.id === post.id ? (
+                      {editingItem?.type === "posts" &&
+                      editingItem?.id === post.id ? (
                         <form
                           onSubmit={(e) => {
                             e.preventDefault();
                             const title = e.target.title.value;
                             const content = e.target.content.value;
-                            handleEdit("posts", post.id, { title, content }, fetchPosts, posts.page);
+                            handleEdit(
+                              "posts",
+                              post.id,
+                              { title, content },
+                              fetchPostsData,
+                              posts.page
+                            );
                           }}
                         >
                           <input
@@ -513,7 +716,10 @@ const Profile = () => {
                             required
                           ></textarea>
                           <button type="submit">Lưu</button>
-                          <button type="button" onClick={() => setEditingItem(null)}>
+                          <button
+                            type="button"
+                            onClick={() => setEditingItem(null)}
+                          >
                             Hủy
                           </button>
                         </form>
@@ -521,20 +727,34 @@ const Profile = () => {
                         <>
                           <h4>{post.title}</h4>
                           <p>{post.content}</p>
-                          <small>{new Date(post.createdAt).toLocaleDateString()}</small>
+                          <small>
+                            {new Date(post.createdAt).toLocaleDateString()}
+                          </small>
                           <button
                             className="action-btn edit"
-                            onClick={() => setEditingItem({ type: "posts", id: post.id })}
+                            onClick={() =>
+                              setEditingItem({ type: "posts", id: post.id })
+                            }
                           >
                             Sửa
                           </button>
                           <button
                             className="action-btn delete"
-                            onClick={() => handleDelete("posts", post.id, fetchPosts, posts.page)}
+                            onClick={() =>
+                              handleDelete(
+                                "posts",
+                                post.id,
+                                fetchPostsData,
+                                posts.page
+                              )
+                            }
                           >
                             Xóa
                           </button>
-                          <CommentSection referenceId={post.id} referenceType="post" />
+                          <CommentSection
+                            referenceId={post.id}
+                            referenceType="post"
+                          />
                         </>
                       )}
                     </li>
@@ -543,7 +763,7 @@ const Profile = () => {
                 <ReactPaginate
                   breakLabel="..."
                   nextLabel="Tiếp >"
-                  onPageChange={(event) => fetchPosts(event.selected + 1)}
+                  onPageChange={(event) => fetchPostsData(event.selected + 1)}
                   pageRangeDisplayed={5}
                   pageCount={Math.ceil(posts.total / itemsPerPage)}
                   previousLabel="< Trước"
@@ -560,7 +780,9 @@ const Profile = () => {
       case "courses":
         return (
           <div className="tab-content">
-            <h3>{user.role === "student" ? "Khóa học đã tham gia" : "Khóa học đã tạo"}</h3>
+            <h3>
+              {user.role === "student" ? "Khóa học đã tham gia" : "Khóa học đã tạo"}
+            </h3>
             {courses.data.length > 0 ? (
               <>
                 <ul>
@@ -581,7 +803,10 @@ const Profile = () => {
                   breakLabel="..."
                   nextLabel="Tiếp >"
                   onPageChange={(event) =>
-                    fetchCourses(event.selected + 1, user.role === "student" ? "enrolled" : "created")
+                    fetchCoursesData(
+                      event.selected + 1,
+                      user.role === "student" ? "enrolled" : "created"
+                    )
                   }
                   pageRangeDisplayed={5}
                   pageCount={Math.ceil(courses.total / itemsPerPage)}
@@ -661,7 +886,14 @@ const Profile = () => {
                       <p>Trạng thái: {course.status}</p>
                       <button
                         className="action-btn delete"
-                        onClick={() => handleDelete("courses", course.id, fetchAllCourses, allCourses.page)}
+                        onClick={() =>
+                          handleDelete(
+                            "courses",
+                            course.id,
+                            fetchAllCoursesData,
+                            allCourses.page
+                          )
+                        }
                       >
                         Xóa
                       </button>
@@ -671,7 +903,7 @@ const Profile = () => {
                 <ReactPaginate
                   breakLabel="..."
                   nextLabel="Tiếp >"
-                  onPageChange={(event) => fetchAllCourses(event.selected + 1)}
+                  onPageChange={(event) => fetchAllCoursesData(event.selected + 1)}
                   pageRangeDisplayed={5}
                   pageCount={Math.ceil(allCourses.total / itemsPerPage)}
                   previousLabel="< Trước"
@@ -731,10 +963,19 @@ const Profile = () => {
                 <ul>
                   {allUsers.data.map((user) => (
                     <li key={user._id}>
-                      <p>{user.username} ({user.email}) - Vai trò: {user.role}</p>
+                      <p>
+                        {user.username} ({user.email}) - Vai trò: {user.role}
+                      </p>
                       <button
                         className="action-btn delete"
-                        onClick={() => handleDelete("users", user._id, fetchAllUsers, allUsers.page)}
+                        onClick={() =>
+                          handleDelete(
+                            "users",
+                            user._id,
+                            fetchAllUsersData,
+                            allUsers.page
+                          )
+                        }
                       >
                         Xóa
                       </button>
@@ -744,7 +985,7 @@ const Profile = () => {
                 <ReactPaginate
                   breakLabel="..."
                   nextLabel="Tiếp >"
-                  onPageChange={(event) => fetchAllUsers(event.selected + 1)}
+                  onPageChange={(event) => fetchAllUsersData(event.selected + 1)}
                   pageRangeDisplayed={5}
                   pageCount={Math.ceil(allUsers.total / itemsPerPage)}
                   previousLabel="< Trước"
@@ -763,7 +1004,6 @@ const Profile = () => {
     }
   };
 
-  // Nếu user là null, không render gì cả (navigate sẽ xử lý)
   if (!user) {
     return null;
   }

@@ -106,3 +106,9 @@ frontend/
 **1. Redux**
 - store.js: cấu hình Redux Store
 - authSlice.js: 
+
+**2. Một số package cho giao diện**
+- import { Helmet } from "react-helmet";
+- import { motion } from "framer-motion";
+- import { toast } from "react-toastify"
+- npm install react-tooltip : bbieeur đồ hoạt động

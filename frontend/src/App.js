@@ -22,6 +22,7 @@ import TakeExam from "./pages/Exams/TakeExam.jsx";
 import DocumentList from "./pages/Document/DocumentList.jsx";
 import DocumentDetail from "./pages/Document/DocumentDetail.jsx";
 import CreateDocument from "./pages/Document/CreateDocument.jsx";
+// import News from "./pages/News/News.jsx";
 import NewsEducation from "./pages/News/NewsEducation.jsx";
 import NewsMagazine from "./pages/News/NewsMagazine.jsx";
 import Profile from "./pages/Profile/Profile.jsx";
@@ -104,6 +105,7 @@ function App() {
               }
             />
 
+            {/* <Route path="/news" element={<News />} /> */}
             <Route path="/news/education" element={<NewsEducation />} />
             <Route path="/news/magazine" element={<NewsMagazine />} />
 

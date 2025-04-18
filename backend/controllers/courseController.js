@@ -59,3 +59,19 @@ exports.deleteCourse = async (req, res) => {
     res.status(500).json({ message: "Error deleting course", error: err.message });
   }
 };
+
+exports.getEnrolledCourses = async (req, res) => {
+  try {
+    const userId = req.user.id; // Giả sử middleware auth đã thêm user
+    const { page = 1, limit = 10 } = req.query;
+    const courses = await Course.find({ enrolledUsers: userId })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+    const total = await Course.countDocuments({ enrolledUsers: userId });
+
+    res.status(200).json({ data: courses, total });
+  } catch (err) {
+    console.error('Error in getEnrolledCourses:', err); // Thêm log để debug
+    res.status(500).json({ message: 'Không thể tải danh sách khóa học', error: err.message });
+  }
+};

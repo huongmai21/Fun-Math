@@ -223,7 +223,7 @@ const Navbar = () => {
                   Hồ sơ
                 </Link>
                 {(user?.role === "student" || user?.role === "teacher") && (
-                  <Link to="/my-courses" className="dropdown-item">
+                  <Link to="/courses/my-courses" className="dropdown-item">
                     Khóa học của tôi
                   </Link>
                 )}

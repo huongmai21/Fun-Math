@@ -38,7 +38,7 @@ exports.getCommentsByDocument = async (req, res) => {
     const replies = await Comment.find({ parentComment: { $in: rootIds } })
       .populate("author", "username");
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       comments: rootComments,
       replies,
@@ -46,7 +46,7 @@ exports.getCommentsByDocument = async (req, res) => {
       totalPages: Math.ceil(total / limit),
     });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Lỗi khi lấy bình luận",
       error: err.message,
@@ -69,7 +69,7 @@ exports.createComment = async (req, res) => {
         message: "Invalid referenceType. Must be 'post', 'article', or 'document'."
       });
     }
-
+    
     const newComment = new Comment({
       referenceType,
       referenceId,
@@ -78,16 +78,23 @@ exports.createComment = async (req, res) => {
     });
 
     await newComment.save();
+    // Ghi lại hoạt động
+    const activity = new UserActivity({
+      userId,
+      type: "comment",
+      description: "Đã thêm 1 bình luận",
+    });
+    await activity.save();
 
     const populatedComment = await newComment.populate("author", "username fullName");
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Gửi bình luận thành công!",
       comment: populatedComment
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Lỗi khi gửi bình luận", error: err.message });
+    return res.status(500).json({ success: false, message: "Lỗi khi gửi bình luận", error: err.message });
   }
 };
 
@@ -130,8 +137,8 @@ exports.deleteComment = async (req, res) => {
 
     await Comment.findByIdAndDelete(req.params.id);
 
-    res.status(200).json({ success: true, message: "Đã xoá bình luận." });
+    return res.status(200).json({ success: true, message: "Đã xoá bình luận." });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Lỗi server", error: err.message });
+    return res.status(500).json({ success: false, message: "Lỗi server", error: err.message });
   }
 };

@@ -1,20 +1,30 @@
-// controllers/newsController.js
 const News = require('../models/News.js');
 
-// Lấy tất cả tin tức (phân trang)
+// Lấy tất cả tin tức (phân trang, lọc theo category và tìm kiếm)
 exports.getAllNews = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 5; // Giảm limit để phù hợp với giao diện
     const skip = (page - 1) * limit;
+    const category = req.query.category || "education";
+    const search = req.query.search?.toLowerCase() || "";
 
-    const news = await News.find()
+    let query = { category };
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { content: { $regex: search, $options: "i" } },
+        { summary: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const news = await News.find(query)
       .sort({ publishedAt: -1 })
       .skip(skip)
       .limit(limit)
       .populate('author', 'username fullName');
 
-    const total = await News.countDocuments();
+    const total = await News.countDocuments(query);
 
     res.status(200).json({
       success: true,
@@ -74,7 +84,7 @@ exports.createNews = async (req, res) => {
       });
     }
 
-    const { title, content, summary, thumbnail, tags, category } = req.body;
+    const { title, content, summary, thumbnail, image, tags, category } = req.body;
     
     const newNews = new News({
       title,
@@ -82,6 +92,7 @@ exports.createNews = async (req, res) => {
       summary,
       author: req.user.id,
       thumbnail,
+      image,
       tags,
       category
     });
@@ -105,7 +116,7 @@ exports.createNews = async (req, res) => {
 // Cập nhật tin tức
 exports.updateNews = async (req, res) => {
   try {
-    const { title, content, summary, thumbnail, tags, category } = req.body;
+    const { title, content, summary, thumbnail, image, tags, category } = req.body;
     
     const news = await News.findById(req.params.id);
     if (!news) {
@@ -130,6 +141,7 @@ exports.updateNews = async (req, res) => {
         content,
         summary,
         thumbnail,
+        image,
         tags,
         category,
         updatedAt: Date.now()
