@@ -3,6 +3,7 @@ const router = express.Router();
 const usersController = require("../controllers/usersController");
 const authMiddleware = require("../middleware/authMiddleware");
 const checkRole = require("../middleware/roleMiddleware");
+const authenticateToken = require("../middleware/authMiddleware");
 
 
 // Lấy thông tin người dùng hiện tại
@@ -25,5 +26,7 @@ router.post("/follow/:id", authMiddleware, usersController.followUser);
 
 // Bỏ theo dõi người dùng
 router.post("/unfollow/:id", authMiddleware, usersController.unfollowUser);
+
+router.get("/users/activity/:year", authenticateToken, usersController.getUserActivity);
 
 module.exports = router;

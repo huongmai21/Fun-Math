@@ -130,6 +130,9 @@ const Navbar = () => {
               <Link to="/study-corner" className="menu-item">
                 Góc học tập
               </Link>
+              <Link to="/study-room" className="menu-item">
+                Phòng học nhóm
+              </Link>
             </>
           )}
         </nav>

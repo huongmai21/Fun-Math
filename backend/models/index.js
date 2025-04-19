@@ -13,6 +13,8 @@ import Message from './Message.js';
 import Course from './Course.js';
 import Notification from './Notification.js';
 import Follow from './Follow.js';
+import UserActivity from './UserActivity';
+import Bookmark from './Bookmark.js';
 
 export {
   User,
@@ -28,5 +30,7 @@ export {
   Message,
   Course,
   Notification,
-  Follow
+  Follow,
+  UserActivity,
+  Bookmark
 };

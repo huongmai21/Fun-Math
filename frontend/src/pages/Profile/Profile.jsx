@@ -1,58 +1,31 @@
 import React, { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
-import ReactPaginate from "react-paginate";
-import { Tooltip } from "react-tooltip"; // Import Tooltip
-import CommentSection from "../../components/common/Comment/CommentSection";
-import {
-  fetchProfile,
-  fetchFollowers,
-  fetchFollowing,
-  followUser,
-  unfollowUser,
-  fetchStudentStats,
-  fetchTeacherStats,
-  fetchSystemStats,
-  fetchAllUsers,
-  deleteUser,
-  updateProfile,
-  updateAvatar,
-  fetchUserActivity,
-} from "../../services/userService";
-import { fetchPosts, deletePost, editPost } from "../../services/postService";
-import { fetchCourses, fetchAllCourses, deleteCourse } from "../../services/courseService";
-import { fetchLibrary, uploadDocument, deleteDocument, editDocument } from "../../services/libraryService";
-import { createExam } from "../../services/examService";
-import { postNews } from "../../services/newsService";
 import { toast } from "react-toastify";
+import { Tooltip } from "react-tooltip";
+import { fetchUserProfile, updateUserProfile } from "../../services/userService";
+import { fetchCourses } from "../../services/courseService";
+import { fetchLibrary } from "../../services/libraryService";
+import { fetchPosts, deletePost } from "../../services/postService";
 import "./Profile.css";
 
 const Profile = () => {
-  const { user } = useSelector((state) => state.auth);
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
-  const [profileData, setProfileData] = useState(null);
-  const [followers, setFollowers] = useState({ data: [], total: 0, page: 1 });
-  const [following, setFollowing] = useState({ data: [], total: 0, page: 1 });
-  const [posts, setPosts] = useState({ data: [], total: 0, page: 1 });
-  const [courses, setCourses] = useState({ data: [], total: 0, page: 1 });
-  const [library, setLibrary] = useState({ data: [], total: 0, page: 1 });
-  const [stats, setStats] = useState(null);
-  const [allCourses, setAllCourses] = useState({ data: [], total: 0, page: 1 });
-  const [allUsers, setAllUsers] = useState({ data: [], total: 0, page: 1 });
+  const [user, setUser] = useState(null);
   const [activityData, setActivityData] = useState({ activity: [], total: 0 });
+  const [courses, setCourses] = useState([]);
+  const [library, setLibrary] = useState([]);
+  const [posts, setPosts] = useState([]);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({});
   const [loading, setLoading] = useState(true);
-  const [editingItem, setEditingItem] = useState(null);
-  const itemsPerPage = 10;
+  const [error, setError] = useState(null);
 
   const commonTabs = [
     { id: "overview", label: "Tổng quan", icon: "fa-house" },
     { id: "stats", label: "Thống kê", icon: "fa-chart-line" },
     { id: "library", label: "Thư viện", icon: "fa-book" },
     { id: "followers", label: "Người theo dõi", icon: "fa-users" },
-    { id: "following", label: "Đang theo dõi", icon: "fa-users" },
+    { id: "following", label: "Đang theo dõi", icon: "fa-user-plus" },
     { id: "posts", label: "Bài đăng", icon: "fa-newspaper" },
   ];
 
@@ -79,175 +52,69 @@ const Profile = () => {
     : commonTabs;
 
   useEffect(() => {
-    if (!user) {
-      toast.error("Vui lòng đăng nhập để xem hồ sơ!");
-      navigate("/auth/login");
-    }
-  }, [user, navigate]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!user) return;
-
+    const loadProfile = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        setLoading(true);
+        const userData = await fetchUserProfile();
+        setUser(userData);
+        setFormData({
+          username: userData.username,
+          email: userData.email,
+          bio: userData.bio || "",
+          socialLink: userData.socialLink || "", // Thêm trường socialLink
+        });
 
-        const profile = await fetchProfile();
-        setProfileData(profile);
+        const activityRes = await fetchUserProfile(selectedYear);
+        setActivityData(activityRes.activity || { activity: [], total: 0 });
 
-        if (user.role === "student") {
-          const stats = await fetchStudentStats();
-          setStats(stats);
-        } else if (user.role === "teacher") {
-          const stats = await fetchTeacherStats();
-          setStats(stats);
-        } else if (user.role === "admin") {
-          const stats = await fetchSystemStats();
-          setStats(stats);
+        try {
+          const coursesData = await fetchCourses("enrolled", 1, 10);
+          setCourses(coursesData.data || []);
+        } catch (courseErr) {
+          console.warn("Failed to load courses:", courseErr);
+          setCourses([]);
+          toast.warn("Không thể tải danh sách khóa học, bạn chưa đăng ký khóa nào hoặc có lỗi server!");
         }
 
-        await fetchFollowersData(1);
-        await fetchFollowingData(1);
-        await fetchPostsData(1);
-        await fetchLibraryData(1);
-        if (user.role === "student") {
-          await fetchCoursesData(1, "enrolled");
-        } else if (user.role === "teacher") {
-          await fetchCoursesData(1, "created");
-        }
-        if (user.role === "admin") {
-          await fetchAllCoursesData(1);
-          await fetchAllUsersData(1);
-        }
+        const libraryData = await fetchLibrary(1, 10);
+        setLibrary(libraryData.data || []);
 
-        const activity = await fetchUserActivity(selectedYear);
-        setActivityData(activity);
+        const postsData = await fetchPosts(1, 10);
+        setPosts(postsData.data || []);
       } catch (err) {
-        console.error(err);
+        console.error("Error loading profile:", err);
+        setError(
+          err.response?.status === 500
+            ? "Lỗi server nghiêm trọng, không thể tải dữ liệu hồ sơ. Vui lòng thử lại sau!"
+            : err.response?.data?.message || "Không thể tải dữ liệu hồ sơ!"
+        );
       } finally {
         setLoading(false);
       }
     };
+    loadProfile();
+  }, [selectedYear]);
 
-    fetchData();
-  }, [user, selectedYear]);
-
-  const fetchFollowersData = async (page) => {
-    const data = await fetchFollowers(page, itemsPerPage);
-    setFollowers({ data: data.data, total: data.total, page });
-  };
-
-  const fetchFollowingData = async (page) => {
-    const data = await fetchFollowing(page, itemsPerPage);
-    setFollowing({ data: data.data, total: data.total, page });
-  };
-
-  const fetchPostsData = async (page) => {
-    const data = await fetchPosts(page, itemsPerPage);
-    setPosts({ data: data.data, total: data.total, page });
-  };
-
-  const fetchLibraryData = async (page) => {
-    const data = await fetchLibrary(page, itemsPerPage);
-    setLibrary({ data: data.data, total: data.total, page });
-  };
-
-  const fetchCoursesData = async (page, type) => {
-    const data = await fetchCourses(type, page, itemsPerPage);
-    setCourses({ data: data.data, total: data.total, page });
-  };
-
-  const fetchAllCoursesData = async (page) => {
-    const data = await fetchAllCourses(page, itemsPerPage);
-    setAllCourses({ data: data.data, total: data.total, page });
-  };
-
-  const fetchAllUsersData = async (page) => {
-    const data = await fetchAllUsers(page, itemsPerPage);
-    setAllUsers({ data: data.data, total: data.total, page });
-  };
-
-  const handleFollow = async (targetUserId) => {
-    await followUser(targetUserId);
-    toast.success("Theo dõi thành công!");
-    const profile = await fetchProfile();
-    setProfileData(profile);
-    await fetchFollowingData(following.page);
-    await fetchFollowersData(followers.page);
-  };
-
-  const handleUnfollow = async (targetUserId) => {
-    await unfollowUser(targetUserId);
-    toast.success("Bỏ theo dõi thành công!");
-    const profile = await fetchProfile();
-    setProfileData(profile);
-    await fetchFollowingData(following.page);
-    await fetchFollowersData(followers.page);
-  };
-
-  const handleCreateExam = async (examData) => {
-    await createExam(examData);
-    toast.success("Tạo đề thi thành công!");
-  };
-
-  const handleUploadDoc = async (formData) => {
-    await uploadDocument(formData);
-    toast.success("Tải tài liệu thành công!");
-    await fetchLibraryData(1);
-  };
-
-  const handlePostNews = async (newsData) => {
-    await postNews(newsData);
-    toast.success("Đăng tin tức thành công!");
-  };
-
-  const handleDelete = async (type, id, fetchFunction, page) => {
-    if (type === "posts") {
-      await deletePost(id);
-    } else if (type === "courses") {
-      await deleteCourse(id);
-    } else if (type === "library") {
-      await deleteDocument(id);
-    } else if (type === "users") {
-      await deleteUser(id);
+  const handleUpdateProfile = async () => {
+    try {
+      await updateUserProfile(formData);
+      setUser({ ...user, ...formData });
+      setIsEditing(false);
+      toast.success("Cập nhật hồ sơ thành công!");
+    } catch (err) {
+      toast.error("Không thể cập nhật hồ sơ!");
     }
-    toast.success("Xóa thành công!");
-    await fetchFunction(page);
   };
 
-  const handleEdit = async (type, id, data, fetchFunction, page) => {
-    if (type === "posts") {
-      await editPost(id, data);
-    } else if (type === "library") {
-      await editDocument(id, data);
+  const handleDeletePost = async (postId) => {
+    try {
+      await deletePost(postId);
+      setPosts(posts.filter((post) => post._id !== postId));
+      toast.success("Xóa bài viết thành công!");
+    } catch (err) {
+      toast.error("Không thể xóa bài viết!");
     }
-    toast.success("Chỉnh sửa thành công!");
-    setEditingItem(null);
-    await fetchFunction(page);
-  };
-
-  const handleUpdateProfile = async (e) => {
-    e.preventDefault();
-    const username = e.target.username.value;
-    const email = e.target.email.value;
-    const bio = e.target.bio.value;
-    const data = { username, email, bio };
-    await updateProfile(data);
-    toast.success("Cập nhật thông tin thành công!");
-    const profile = await fetchProfile();
-    setProfileData(profile);
-    setIsEditingProfile(false);
-  };
-
-  const handleUpdateAvatar = async (e) => {
-    e.preventDefault();
-    const file = e.target.avatar.files[0];
-    const formData = new FormData();
-    formData.append("avatar", file);
-    await updateAvatar(formData);
-    toast.success("Cập nhật ảnh avatar thành công!");
-    const profile = await fetchProfile();
-    setProfileData(profile);
   };
 
   const renderActivityGraph = () => {
@@ -268,13 +135,18 @@ const Profile = () => {
     const days = ["", "Mon", "", "Wed", "", "Fri", ""];
     const startDate = new Date(selectedYear, 0, 1);
     const endDate = new Date(selectedYear, 11, 31);
-    const daysInYear = (endDate - startDate) / (1000 * 60 * 60 * 24) + 1;
+    const daysInYear = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
     const weeks = Math.ceil(daysInYear / 7);
     const activityMap = {};
 
-    activityData.activity.forEach(({ date, count, details }) => {
-      activityMap[date] = { count, details };
-    });
+    // Nếu không có hoạt động, chỉ hiển thị màu xám
+    const hasActivity = activityData.activity && Array.isArray(activityData.activity) && activityData.activity.length > 0;
+
+    if (hasActivity) {
+      activityData.activity.forEach(({ date, count, details }) => {
+        activityMap[date] = { count, details };
+      });
+    }
 
     const squares = [];
     let currentDate = new Date(startDate);
@@ -282,10 +154,17 @@ const Profile = () => {
 
     for (let week = 0; week < weeks; week++) {
       const weekSquares = [];
+      if (!(currentDate instanceof Date) || isNaN(currentDate.getTime())) {
+        console.error("Invalid currentDate:", currentDate);
+        break;
+      }
+
       const currentMonth = currentDate.getMonth();
       if (
         week === 0 ||
-        (currentDate.getDate() <= 7 && currentMonth !== new Date(currentDate).setDate(currentDate.getDate() - 7).getMonth())
+        (currentDate.getDate() <= 7 &&
+          currentMonth !==
+            new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000).getMonth())
       ) {
         monthPositions.push({ week, month: months[currentMonth] });
       }
@@ -293,12 +172,14 @@ const Profile = () => {
       for (let day = 0; day < 7; day++) {
         if (currentDate.getFullYear() !== selectedYear) break;
         const dateStr = currentDate.toISOString().split("T")[0];
-        const activity = activityMap[dateStr] || { count: 0, details: [] };
-        const count = activity.count;
-        let colorClass = "activity-square level-0";
-        if (count > 0 && count <= 2) colorClass = "activity-square level-1";
-        else if (count > 2 && count <= 5) colorClass = "activity-square level-2";
-        else if (count > 5) colorClass = "activity-square level-3";
+        const activity = hasActivity ? (activityMap[dateStr] || { count: 0, details: [] }) : { count: 0, details: [] };
+        const count = activity.count || 0;
+        let colorClass = "activity-square level-0"; // Mặc định là màu xám
+        if (hasActivity) {
+          if (count > 0 && count <= 2) colorClass = "activity-square level-1";
+          else if (count > 2 && count <= 5) colorClass = "activity-square level-2";
+          else if (count > 5) colorClass = "activity-square level-3";
+        }
 
         weekSquares.push(
           <div
@@ -307,14 +188,15 @@ const Profile = () => {
             data-tooltip-id={`tooltip-${dateStr}`}
             data-tooltip-content={
               count > 0
-                ? `${dateStr}: ${count} hoạt động\n${activity.details
+                ? `${dateStr}: ${count} hoạt động\n${(activity.details || [])
                     .map((d) => d.description)
                     .join("\n")}`
                 : `${dateStr}: Không có hoạt động`
             }
           ></div>
         );
-        currentDate.setDate(currentDate.getDate() + 1);
+
+        currentDate = new Date(currentDate.getTime() + 24 * 60 * 60 * 1000);
       }
       squares.push(
         <div key={week} className="activity-week">
@@ -326,7 +208,7 @@ const Profile = () => {
     return (
       <div className="activity-graph">
         <div className="activity-header">
-          <h3>{activityData.total} hoạt động trong năm {selectedYear}</h3>
+          <h3>{activityData.total || 0} hoạt động trong năm {selectedYear}</h3>
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
@@ -356,656 +238,238 @@ const Profile = () => {
         <div className="activity-legend">
           <span>Ít</span>
           <div className="activity-square level-0"></div>
-          <div className="activity-square level-1"></div>
-          <div className="activity-square level-2"></div>
-          <div className="activity-square level-3"></div>
-          <span>Nhiêu</span>
+          {hasActivity && (
+            <>
+              <div className="activity-square level-1"></div>
+              <div className="activity-square level-2"></div>
+              <div className="activity-square level-3"></div>
+            </>
+          )}
+          <span>Nhiều</span>
         </div>
-        <Tooltip
-          id="activity-tooltip"
-          place="top"
-          style={{ whiteSpace: "pre-line", zIndex: 1000 }}
-        />
+        <Tooltip id="activity-tooltip" place="top" style={{ whiteSpace: "pre-line", zIndex: 1000 }} />
+      </div>
+    );
+  };
+
+  const renderRecentActivity = () => {
+    if (!activityData.activity || !Array.isArray(activityData.activity)) {
+      return <div>Không có hoạt động gần đây!</div>;
+    }
+
+    const recentActivities = activityData.activity
+      .filter((activity) => activity.details && activity.details.length > 0)
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 5);
+
+    const getActivityIcon = (type) => {
+      switch (type) {
+        case "post":
+          return "fa-newspaper";
+        case "comment":
+          return "fa-comment";
+        case "follow":
+          return "fa-users";
+        case "exam":
+          return "fa-pen";
+        case "document":
+          return "fa-book";
+        case "course":
+          return "fa-graduation-cap";
+        default:
+          return "fa-circle";
+      }
+    };
+
+    const formatDate = (dateStr) => {
+      const date = new Date(dateStr);
+      return `${date.toLocaleString("default", { month: "short" })} ${date.getDate()}`;
+    };
+
+    return (
+      <div className="recent-activity">
+        <h3>Hoạt động gần đây</h3>
+        {recentActivities.length > 0 ? (
+          recentActivities.map((activity, index) => (
+            <div key={index} className="activity-item">
+              <div className="activity-date">
+                {formatDate(activity.date)}
+              </div>
+              <div className="activity-details">
+                {activity.details.map((detail, idx) => (
+                  <div key={idx} className="activity-entry">
+                    <i className={`fa-solid ${getActivityIcon(detail.type)} activity-icon`}></i>
+                    <span>{detail.description}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))
+        ) : (
+          <p>Không có hoạt động nào để hiển thị.</p>
+        )}
       </div>
     );
   };
 
   const renderContent = () => {
-    if (loading) return <div className="tab-content">Đang tải...</div>;
-
     switch (activeTab) {
       case "overview":
         return (
           <div className="profile-overview">
             <div className="user-info">
-              <img
-                src={profileData?.avatar || "/assets/images/default-avatar.png"}
-                alt="Avatar"
-                className="user-avatar"
-              />
+              <div className="avatar-section">
+                {/* <i class="fa-regular fa-face-smile"></i> */}
+                <img
+                  src={user?.avatar || "/default-avatar.png"}
+                  alt="Avatar"
+                  className="user-avatar"
+                />
+                
+                <div className="follow-stats">
+                <i class="fa-solid fa-user-tag"></i>
+                  <span
+                    className="follow-link"
+                    onClick={() => setActiveTab("followers")}
+                  >
+                    {user?.followers?.length || 0} người theo dõi
+                  </span>
+                  <span
+                    className="follow-link"
+                    onClick={() => setActiveTab("following")}
+                  >
+                    {user?.following?.length || 0} đang theo dõi
+                  </span>
+                </div>
+              </div>
               <div className="user-details">
-                {isEditingProfile ? (
-                  <form onSubmit={handleUpdateProfile}>
+                {isEditing ? (
+                  <div>
                     <div className="form-group">
-                      <label>Tên người dùng:</label>
+                      <label>Tên người dùng</label>
                       <input
                         type="text"
-                        name="username"
-                        defaultValue={profileData?.username}
-                        required
+                        value={formData.username}
+                        onChange={(e) =>
+                          setFormData({ ...formData, username: e.target.value })
+                        }
                       />
                     </div>
                     <div className="form-group">
-                      <label>Email:</label>
+                      <label>Email</label>
                       <input
                         type="email"
-                        name="email"
-                        defaultValue={profileData?.email}
-                        required
+                        value={formData.email}
+                        onChange={(e) =>
+                          setFormData({ ...formData, email: e.target.value })
+                        }
                       />
                     </div>
                     <div className="form-group">
-                      <label>Tiểu sử:</label>
+                      <label>Tiểu sử</label>
                       <textarea
-                        name="bio"
-                        defaultValue={profileData?.bio || ""}
-                        rows="3"
-                      ></textarea>
+                        value={formData.bio}
+                        onChange={(e) =>
+                          setFormData({ ...formData, bio: e.target.value })
+                        }
+                      />
                     </div>
-                    <button type="submit">Lưu</button>
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingProfile(false)}
-                    >
+                    <div className="form-group">
+                      <label>Link social</label>
+                      <input
+                        type="text"
+                        value={formData.socialLink}
+                        onChange={(e) =>
+                          setFormData({ ...formData, socialLink: e.target.value })
+                        }
+                        placeholder="Nhập link mạng xã hội"
+                      />
+                    </div>
+                    <button type="submit" onClick={handleUpdateProfile}>
+                      Lưu
+                    </button>
+                    <button type="button" onClick={() => setIsEditing(false)}>
                       Hủy
                     </button>
-                  </form>
+                  </div>
                 ) : (
-                  <>
-                    <h2>{profileData?.username || "Người dùng"}</h2>
-                    <p>{profileData?.email}</p>
-                    <p>{profileData?.bio || "Chưa có tiểu sử"}</p>
+                  <div>
+                    <h2>{user?.username}</h2>
+                    <p>{user?.email}</p>
+                    <p>{user?.bio || "Chưa có tiểu sử."}</p>
+                    {user?.socialLink && (
+                      <p>
+                        <a href={user.socialLink} target="_blank" rel="noopener noreferrer">
+                          Link social
+                        </a>
+                      </p>
+                    )}
                     <p>
-                      <strong>Người theo dõi:</strong>{" "}
-                      {profileData?.followers || 0}
-                    </p>
-                    <p>
-                      <strong>Đang theo dõi:</strong>{" "}
-                      {profileData?.following || 0}
-                    </p>
-                    <p>
-                      <strong>Trạng thái:</strong>{" "}
-                      <span
-                        className={`status ${
-                          profileData?.isActive ? "active" : "inactive"
-                        }`}
-                      >
-                        {profileData?.isActive
-                          ? "Đang hoạt động"
-                          : "Không hoạt động"}
-                      </span>
+                      Trạng thái: <span className="status active">Hoạt động</span>
                     </p>
                     <button
                       className="action-btn edit"
-                      onClick={() => setIsEditingProfile(true)}
+                      onClick={() => setIsEditing(true)}
                     >
-                      Chỉnh sửa thông tin
+                      Chỉnh sửa
                     </button>
-                  </>
-                )}
-                <form onSubmit={handleUpdateAvatar}>
-                  <div className="form-group">
-                    <label>Thay đổi ảnh avatar:</label>
-                    <input type="file" name="avatar" accept="image/*" required />
                   </div>
-                  <button type="submit">Cập nhật avatar</button>
-                </form>
+                )}
               </div>
             </div>
             {renderActivityGraph()}
+            {renderRecentActivity()}
           </div>
         );
       case "stats":
-        return (
-          <div className="tab-content">
-            {user.role === "student" && stats && (
-              <div>
-                <h3>Thống kê học tập</h3>
-                <p>Khóa học đã hoàn thành: {stats.completedCourses}</p>
-                <p>Điểm trung bình: {stats.averageScore}</p>
-                <p>Tổng số bài đăng: {stats.totalPosts}</p>
-              </div>
-            )}
-            {user.role === "teacher" && stats && (
-              <div>
-                <h3>Thống kê giảng dạy</h3>
-                <p>Tổng số khóa học: {stats.totalCourses}</p>
-                <p>Tổng số học sinh: {stats.totalStudents}</p>
-                <p>Tỷ lệ hoàn thành trung bình: {stats.averageCompletion}%</p>
-              </div>
-            )}
-            {user.role === "admin" && stats && (
-              <div>
-                <h3>Thống kê hệ thống</h3>
-                <p>Tổng số người dùng: {stats.totalUsers}</p>
-                <p>Tổng số khóa học: {stats.totalCourses}</p>
-                <p>Tổng số đề thi: {stats.totalExams}</p>
-              </div>
-            )}
-          </div>
-        );
+        return <div>Thống kê (Chưa triển khai)</div>;
       case "library":
         return (
-          <div className="tab-content">
-            <h3>Thư viện tài liệu</h3>
-            {library.data.length > 0 ? (
-              <>
-                <ul>
-                  {library.data.map((doc) => (
-                    <li key={doc.id}>
-                      {editingItem?.type === "library" &&
-                      editingItem?.id === doc.id ? (
-                        <form
-                          onSubmit={(e) => {
-                            e.preventDefault();
-                            const title = e.target.title.value;
-                            handleEdit(
-                              "library",
-                              doc.id,
-                              { title },
-                              fetchLibraryData,
-                              library.page
-                            );
-                          }}
-                        >
-                          <input
-                            type="text"
-                            name="title"
-                            defaultValue={doc.title}
-                            required
-                          />
-                          <button type="submit">Lưu</button>
-                          <button
-                            type="button"
-                            onClick={() => setEditingItem(null)}
-                          >
-                            Hủy
-                          </button>
-                        </form>
-                      ) : (
-                        <>
-                          <a
-                            href={doc.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            {doc.title}
-                          </a>{" "}
-                          - {new Date(doc.createdAt).toLocaleDateString()}
-                          <button
-                            className="action-btn edit"
-                            onClick={() =>
-                              setEditingItem({ type: "library", id: doc.id })
-                            }
-                          >
-                            Sửa
-                          </button>
-                          <button
-                            className="action-btn delete"
-                            onClick={() =>
-                              handleDelete(
-                                "library",
-                                doc.id,
-                                fetchLibraryData,
-                                library.page
-                              )
-                            }
-                          >
-                            Xóa
-                          </button>
-                        </>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-                <ReactPaginate
-                  breakLabel="..."
-                  nextLabel="Tiếp >"
-                  onPageChange={(event) => fetchLibraryData(event.selected + 1)}
-                  pageRangeDisplayed={5}
-                  pageCount={Math.ceil(library.total / itemsPerPage)}
-                  previousLabel="< Trước"
-                  renderOnZeroPageCount={null}
-                  containerClassName="pagination"
-                  activeClassName="active"
-                />
-              </>
-            ) : (
-              <p>Chưa có tài liệu nào.</p>
-            )}
-          </div>
+          <ul>
+            {library.map((doc) => (
+              <li key={doc._id}>{doc.title}</li>
+            ))}
+          </ul>
         );
       case "followers":
-        return (
-          <div className="tab-content">
-            <h3>Danh sách người theo dõi</h3>
-            {followers.data.length > 0 ? (
-              <>
-                <ul>
-                  {followers.data.map((follower) => (
-                    <li key={follower._id}>
-                      <img
-                        src={
-                          follower.avatar || "/assets/images/default-avatar.png"
-                        }
-                        alt="Avatar"
-                        className="friend-avatar"
-                      />
-                      {follower.username}
-                      {following.data.some((f) => f._id === follower._id) ? (
-                        <button
-                          className="action-btn unfollow"
-                          onClick={() => handleUnfollow(follower._id)}
-                        >
-                          Bỏ theo dõi
-                        </button>
-                      ) : (
-                        <button
-                          className="action-btn follow"
-                          onClick={() => handleFollow(follower._id)}
-                        >
-                          Theo dõi
-                        </button>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-                <ReactPaginate
-                  breakLabel="..."
-                  nextLabel="Tiếp >"
-                  onPageChange={(event) => fetchFollowersData(event.selected + 1)}
-                  pageRangeDisplayed={5}
-                  pageCount={Math.ceil(followers.total / itemsPerPage)}
-                  previousLabel="< Trước"
-                  renderOnZeroPageCount={null}
-                  containerClassName="pagination"
-                  activeClassName="active"
-                />
-              </>
-            ) : (
-              <p>Chưa có người theo dõi nào.</p>
-            )}
-          </div>
-        );
+        return <div>Danh sách người theo dõi (Chưa triển khai)</div>;
       case "following":
-        return (
-          <div className="tab-content">
-            <h3>Danh sách đang theo dõi</h3>
-            {following.data.length > 0 ? (
-              <>
-                <ul>
-                  {following.data.map((follow) => (
-                    <li key={follow._id}>
-                      <img
-                        src={follow.avatar || "/assets/images/default-avatar.png"}
-                        alt="Avatar"
-                        className="friend-avatar"
-                      />
-                      {follow.username}
-                      <button
-                        className="action-btn unfollow"
-                        onClick={() => handleUnfollow(follow._id)}
-                      >
-                        Bỏ theo dõi
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-                <ReactPaginate
-                  breakLabel="..."
-                  nextLabel="Tiếp >"
-                  onPageChange={(event) => fetchFollowingData(event.selected + 1)}
-                  pageRangeDisplayed={5}
-                  pageCount={Math.ceil(following.total / itemsPerPage)}
-                  previousLabel="< Trước"
-                  renderOnZeroPageCount={null}
-                  containerClassName="pagination"
-                  activeClassName="active"
-                />
-              </>
-            ) : (
-              <p>Chưa theo dõi ai.</p>
-            )}
-          </div>
-        );
+        return <div>Danh sách đang theo dõi (Chưa triển khai)</div>;
       case "posts":
         return (
-          <div className="tab-content">
-            <h3>Bài đăng trên góc học tập</h3>
-            {posts.data.length > 0 ? (
-              <>
-                <ul>
-                  {posts.data.map((post) => (
-                    <li key={post.id}>
-                      {editingItem?.type === "posts" &&
-                      editingItem?.id === post.id ? (
-                        <form
-                          onSubmit={(e) => {
-                            e.preventDefault();
-                            const title = e.target.title.value;
-                            const content = e.target.content.value;
-                            handleEdit(
-                              "posts",
-                              post.id,
-                              { title, content },
-                              fetchPostsData,
-                              posts.page
-                            );
-                          }}
-                        >
-                          <input
-                            type="text"
-                            name="title"
-                            defaultValue={post.title}
-                            required
-                          />
-                          <textarea
-                            name="content"
-                            defaultValue={post.content}
-                            rows="3"
-                            required
-                          ></textarea>
-                          <button type="submit">Lưu</button>
-                          <button
-                            type="button"
-                            onClick={() => setEditingItem(null)}
-                          >
-                            Hủy
-                          </button>
-                        </form>
-                      ) : (
-                        <>
-                          <h4>{post.title}</h4>
-                          <p>{post.content}</p>
-                          <small>
-                            {new Date(post.createdAt).toLocaleDateString()}
-                          </small>
-                          <button
-                            className="action-btn edit"
-                            onClick={() =>
-                              setEditingItem({ type: "posts", id: post.id })
-                            }
-                          >
-                            Sửa
-                          </button>
-                          <button
-                            className="action-btn delete"
-                            onClick={() =>
-                              handleDelete(
-                                "posts",
-                                post.id,
-                                fetchPostsData,
-                                posts.page
-                              )
-                            }
-                          >
-                            Xóa
-                          </button>
-                          <CommentSection
-                            referenceId={post.id}
-                            referenceType="post"
-                          />
-                        </>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-                <ReactPaginate
-                  breakLabel="..."
-                  nextLabel="Tiếp >"
-                  onPageChange={(event) => fetchPostsData(event.selected + 1)}
-                  pageRangeDisplayed={5}
-                  pageCount={Math.ceil(posts.total / itemsPerPage)}
-                  previousLabel="< Trước"
-                  renderOnZeroPageCount={null}
-                  containerClassName="pagination"
-                  activeClassName="active"
-                />
-              </>
-            ) : (
-              <p>Chưa có bài đăng nào.</p>
-            )}
-          </div>
+          <ul>
+            {posts.map((post) => (
+              <li key={post._id}>
+                {post.title}
+                <button
+                  className="action-btn delete"
+                  onClick={() => handleDeletePost(post._id)}
+                >
+                  Xóa
+                </button>
+              </li>
+            ))}
+          </ul>
         );
-      case "courses":
-        return (
-          <div className="tab-content">
-            <h3>
-              {user.role === "student" ? "Khóa học đã tham gia" : "Khóa học đã tạo"}
-            </h3>
-            {courses.data.length > 0 ? (
-              <>
-                <ul>
-                  {courses.data.map((course) => (
-                    <li key={course.id}>
-                      <h4>{course.title}</h4>
-                      <p>{course.description}</p>
-                      {user.role === "student" && (
-                        <p>Tiến độ: {course.progress}%</p>
-                      )}
-                      {user.role === "teacher" && (
-                        <p>Trạng thái: {course.status}</p>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-                <ReactPaginate
-                  breakLabel="..."
-                  nextLabel="Tiếp >"
-                  onPageChange={(event) =>
-                    fetchCoursesData(
-                      event.selected + 1,
-                      user.role === "student" ? "enrolled" : "created"
-                    )
-                  }
-                  pageRangeDisplayed={5}
-                  pageCount={Math.ceil(courses.total / itemsPerPage)}
-                  previousLabel="< Trước"
-                  renderOnZeroPageCount={null}
-                  containerClassName="pagination"
-                  activeClassName="active"
-                />
-              </>
-            ) : (
-              <p>Chưa có khóa học nào.</p>
-            )}
-          </div>
-        );
-      case "create-exam":
-        return (
-          <div className="tab-content">
-            <h3>Tạo đề thi mới</h3>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const title = e.target.title.value;
-                const questions = e.target.questions.value.split("\n");
-                handleCreateExam({ title, questions });
-              }}
-            >
-              <div className="form-group">
-                <label>Tiêu đề đề thi:</label>
-                <input type="text" name="title" required />
-              </div>
-              <div className="form-group">
-                <label>Câu hỏi (mỗi câu một dòng):</label>
-                <textarea name="questions" rows="5" required></textarea>
-              </div>
-              <button type="submit">Tạo đề thi</button>
-            </form>
-          </div>
-        );
-      case "upload-docs":
-        return (
-          <div className="tab-content">
-            <h3>Tải lên tài liệu</h3>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const title = e.target.title.value;
-                const file = e.target.file.files[0];
-                const formData = new FormData();
-                formData.append("title", title);
-                formData.append("file", file);
-                handleUploadDoc(formData);
-              }}
-            >
-              <div className="form-group">
-                <label>Tiêu đề tài liệu:</label>
-                <input type="text" name="title" required />
-              </div>
-              <div className="form-group">
-                <label>Chọn file:</label>
-                <input type="file" name="file" required />
-              </div>
-              <button type="submit">Tải lên</button>
-            </form>
-          </div>
-        );
-      case "manage-courses":
-        return (
-          <div className="tab-content">
-            <h3>Quản lý khóa học</h3>
-            {allCourses.data.length > 0 ? (
-              <>
-                <ul>
-                  {allCourses.data.map((course) => (
-                    <li key={course.id}>
-                      <h4>{course.title}</h4>
-                      <p>{course.description}</p>
-                      <p>Trạng thái: {course.status}</p>
-                      <button
-                        className="action-btn delete"
-                        onClick={() =>
-                          handleDelete(
-                            "courses",
-                            course.id,
-                            fetchAllCoursesData,
-                            allCourses.page
-                          )
-                        }
-                      >
-                        Xóa
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-                <ReactPaginate
-                  breakLabel="..."
-                  nextLabel="Tiếp >"
-                  onPageChange={(event) => fetchAllCoursesData(event.selected + 1)}
-                  pageRangeDisplayed={5}
-                  pageCount={Math.ceil(allCourses.total / itemsPerPage)}
-                  previousLabel="< Trước"
-                  renderOnZeroPageCount={null}
-                  containerClassName="pagination"
-                  activeClassName="active"
-                />
-              </>
-            ) : (
-              <p>Chưa có khóa học nào.</p>
-            )}
-          </div>
-        );
-      case "post-news":
-        return (
-          <div className="tab-content">
-            <h3>Đăng tin tức</h3>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const title = e.target.title.value;
-                const content = e.target.content.value;
-                handlePostNews({ title, content });
-              }}
-            >
-              <div className="form-group">
-                <label>Tiêu đề:</label>
-                <input type="text" name="title" required />
-              </div>
-              <div className="form-group">
-                <label>Nội dung:</label>
-                <textarea name="content" rows="5" required></textarea>
-              </div>
-              <button type="submit">Đăng tin tức</button>
-            </form>
-          </div>
-        );
-      case "system-stats":
-        return (
-          <div className="tab-content">
-            <h3>Thống kê hệ thống</h3>
-            {stats && (
-              <div>
-                <p>Tổng số người dùng: {stats.totalUsers}</p>
-                <p>Tổng số khóa học: {stats.totalCourses}</p>
-                <p>Tổng số đề thi: {stats.totalExams}</p>
-              </div>
-            )}
-          </div>
-        );
-      case "manage-users":
-        return (
-          <div className="tab-content">
-            <h3>Quản lý người dùng</h3>
-            {allUsers.data.length > 0 ? (
-              <>
-                <ul>
-                  {allUsers.data.map((user) => (
-                    <li key={user._id}>
-                      <p>
-                        {user.username} ({user.email}) - Vai trò: {user.role}
-                      </p>
-                      <button
-                        className="action-btn delete"
-                        onClick={() =>
-                          handleDelete(
-                            "users",
-                            user._id,
-                            fetchAllUsersData,
-                            allUsers.page
-                          )
-                        }
-                      >
-                        Xóa
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-                <ReactPaginate
-                  breakLabel="..."
-                  nextLabel="Tiếp >"
-                  onPageChange={(event) => fetchAllUsersData(event.selected + 1)}
-                  pageRangeDisplayed={5}
-                  pageCount={Math.ceil(allUsers.total / itemsPerPage)}
-                  previousLabel="< Trước"
-                  renderOnZeroPageCount={null}
-                  containerClassName="pagination"
-                  activeClassName="active"
-                />
-              </>
-            ) : (
-              <p>Chưa có người dùng nào.</p>
-            )}
-          </div>
-        );
+      case "news":
+        return <div>Đăng tin tức (Chưa triển khai)</div>;
+      case "exams":
+        return <div>Tạo đề thi (Chưa triển khai)</div>;
       default:
         return null;
     }
   };
 
-  if (!user) {
-    return null;
+  if (loading) {
+    return <div className="profile-page">Đang tải...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="profile-page">
+        <div className="error">{error}</div>
+      </div>
+    );
   }
 
   return (
@@ -1018,15 +482,24 @@ const Profile = () => {
                 key={tab.id}
                 className={activeTab === tab.id ? "active" : ""}
                 onClick={() => setActiveTab(tab.id)}
+                data-tooltip-id={`sidebar-tooltip-${tab.id}`}
+                data-tooltip-content={tab.label}
               >
                 <i className={`fa-solid ${tab.icon}`}></i>
-                <span>{tab.label}</span>
               </li>
             ))}
           </ul>
         </div>
         <div className="main-content">{renderContent()}</div>
       </div>
+      {sidebarTabs.map((tab) => (
+        <Tooltip
+          key={tab.id}
+          id={`sidebar-tooltip-${tab.id}`}
+          place="right"
+          style={{ zIndex: 1000 }}
+        />
+      ))}
     </div>
   );
 };

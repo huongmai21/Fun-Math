@@ -1,18 +1,36 @@
 import api from "./api";
 import { toast } from "react-toastify";
 
-// Lấy thông tin profile
-export const fetchProfile = async () => {
+export const fetchUserProfile = async (year) => {
   try {
-    const res = await api.get("/users/profile");
+    const endpoint = year ? `/users/activity/${year}` : "/users/profile";
+    const res = await api.get(endpoint);
+    if (year && (!res.data.activity || !Array.isArray(res.data.activity))) {
+      return { activity: [], total: 0 };
+    }
     return res.data;
   } catch (err) {
     if (err.response?.status === 401) {
       toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
-      setTimeout(() => window.location.href = "/auth/login", 2000);
-      return;
+      setTimeout(() => (window.location.href = "/auth/login"), 2000);
+    } else {
+      toast.error(err.response?.data?.message || "Không thể tải dữ liệu hồ sơ!");
     }
-    toast.error(err.response?.data?.message || "Không thể tải thông tin profile!");
+    throw err;
+  }
+};
+
+export const updateUserProfile = async (data) => {
+  try {
+    const res = await api.put("/users/profile", data);
+    return res.data;
+  } catch (err) {
+    if (err.response?.status === 401) {
+      toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
+      setTimeout(() => (window.location.href = "/auth/login"), 2000);
+    } else {
+      toast.error(err.response?.data?.message || "Không thể cập nhật hồ sơ!");
+    }
     throw err;
   }
 };
@@ -167,21 +185,6 @@ export const deleteUser = async (userId) => {
   }
 };
 
-// Cập nhật thông tin cá nhân
-export const updateProfile = async (data) => {
-  try {
-    const res = await api.put("/users/profile", data);
-    return res.data;
-  } catch (err) {
-    if (err.response?.status === 401) {
-      toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
-      setTimeout(() => window.location.href = "/auth/login", 2000);
-      return;
-    }
-    toast.error(err.response?.data?.message || "Không thể cập nhật thông tin cá nhân!");
-    throw err;
-  }
-};
 
 // Cập nhật ảnh avatar
 export const updateAvatar = async (formData) => {

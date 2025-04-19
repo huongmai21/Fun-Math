@@ -1,13 +1,30 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* global.css */
+:root {
+  --primary-font: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+body {
+  font-family: var(--primary-font);
+  font-weight: 400; /* Độ dày mặc định là regular */
+  line-height: 1.6; /* Khoảng cách dòng cho dễ đọc */
+  color: #333;
+  margin: 0;
+  padding: 0;
+}
+
+/* Đảm bảo các thẻ HTML cơ bản cũng dùng Poppins */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--primary-font);
+  font-weight: 600; /* Tiêu đề dùng Poppins semibold */
+}
+
+p, a, span, div, input, textarea, button, select {
+  font-family: var(--primary-font);
+  font-weight: 400; /* Nội dung dùng Poppins regular */
+}
+
+/* Đảm bảo các phần tử giao diện khác cũng kế thừa */
+* {
+  box-sizing: border-box;
+  font-family: var(--primary-font);
 }

@@ -1,7 +1,7 @@
 // src/App.js
 import React, { useEffect } from "react";
 import {
-  BrowserRouter as Router,
+  HashRouter  as Router,
   Routes,
   Route,
   useNavigate,
@@ -14,6 +14,7 @@ import { ThemeProvider } from "./context/ThemeContext.js";
 
 import Navbar from "./components/layout/Navbar/Navbar.jsx";
 import HomePage from "./pages/Home/Home.jsx";
+import StudyCorner from "./pages/StudyCorner/StudyCorner.jsx";
 import StudyRoom from "./pages/StudyRoom/StudyRoom.jsx";
 import AuthForm from "./pages/Auth/AuthForm.jsx";
 import ExamList from "./pages/Exams/ExamList.jsx";
@@ -135,6 +136,16 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            
+            <Route
+              path="/study-corner"
+              element={
+                <ProtectedRoute>
+                  <StudyCorner />
+                </ProtectedRoute>
+              }
+            />
+            
 
             <Route
               path="/study-room"

@@ -236,7 +236,7 @@
 .login-register {
   text-align: center;
   margin-top: 1rem;
-  color: #e4e4e4;
+  color: #ff6f61;
 }
 
 .login-register a {
@@ -351,7 +351,7 @@
   transform: rotate(0deg);
 }
 
-/* src/styles/LogReg.css */
+
 .remember-forgot button,
 .login-register button {
   background: none;

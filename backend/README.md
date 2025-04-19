@@ -73,3 +73,5 @@ backend/
 
 - **Cài đặt dependencies cho development**
     npm install --save-dev nodemon eslint
+
+- npm install express-validator

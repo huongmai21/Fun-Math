@@ -10,18 +10,23 @@ const authenticateToken = async (req, res, next) => {
     req.headers.authorization.startsWith("Bearer")
   ) {
     try {
-      token = req.headers.authorization.split(" ")[1];
+      const token = req.header("Authorization")?.replace("Bearer ", "");
+      if (!token) {
+        console.warn("No token provided in Authorization header");
+        return res.status(401).json({ message: "Không có token, vui lòng đăng nhập!" });
+      }
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = await User.findById(decoded.id).select("-password");
+      req.user = decoded;
+      console.log(`Authenticated user: ${decoded.id}`);
       next();
-    } catch (error) {
-      console.error(error);
-      return res.status(401).json({ message: "Không được phép, token không hợp lệ" });
+    } catch (err) {
+      console.error("Auth middleware error:", {
+        message: err.message,
+        stack: err.stack,
+        token: req.header("Authorization")?.substring(0, 10) + "...",
+      });
+      return res.status(401).json({ message: "Token không hợp lệ!" });
     }
-  }
-
-  if (!token) {
-    return res.status(401).json({ message: "Không được phép, không có token" });
   }
 };
 

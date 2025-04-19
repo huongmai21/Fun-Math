@@ -1,7 +1,6 @@
 import api from "./api";
 import { toast } from "react-toastify";
 
-// Lấy danh sách tài liệu
 export const fetchLibrary = async (page, limit) => {
   try {
     const res = await api.get("/library", {
@@ -12,10 +11,10 @@ export const fetchLibrary = async (page, limit) => {
     if (err.response?.status === 401) {
       toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
       setTimeout(() => (window.location.href = "/auth/login"), 2000);
-      return;
-    }
-    if (err.response?.status === 403) {
+    } else if (err.response?.status === 403) {
       toast.error("Bạn không có quyền truy cập thư viện tài liệu!");
+    } else if (err.response?.status === 500) {
+      toast.error("Lỗi server, vui lòng thử lại sau!");
     } else if (err.response?.status === 400) {
       toast.error("Yêu cầu không hợp lệ, vui lòng kiểm tra lại!");
     } else {

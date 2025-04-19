@@ -2,8 +2,8 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
 const courseSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  description: { type: String, required: true },
+  title: { type: String, required: true, unique: true },
+  description: { type: String},
   instructor: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   thumbnail: { type: String },
   educationLevel: { 
@@ -13,8 +13,7 @@ const courseSchema = new mongoose.Schema({
   subject: { type: String },
   price: { type: Number, default: 0 },
   duration: { type: String }, // e.g., "8 weeks"
-  enrolledStudents: [{ type: Schema.Types.ObjectId, ref: 'User' }],
-  modules: [{
+  enrolledUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],  modules: [{
     title: String,
     description: String,
     lessons: [{
@@ -35,5 +34,8 @@ const courseSchema = new mongoose.Schema({
     date: { type: Date, default: Date.now }
   }]
 });
+
+// Thêm index cho enrolledUsers
+courseSchema.index({ enrolledUsers: 1 });
 
 module.exports =  mongoose.model('Course', courseSchema);
