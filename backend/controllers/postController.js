@@ -1,137 +1,126 @@
-// controllers/postController.js
-const Post = require("../models/Post");
-const Bookmark = require("../models/Bookmark");
-const Notification = require("../models/Notification");
-const User = require("../models/User");
+const Post = require('../models/Post');
+const User = require('../models/User');
 
-// Lấy danh sách bài đăng hoặc bài tập
 exports.getPosts = async (req, res) => {
+  const { category, category_ne, page = 1, limit = 5 } = req.query;
   try {
-    const { category, category_ne, isSolved } = req.query;
-    const query = {};
+    const query = { author: req.user.id };
     if (category) query.category = category;
     if (category_ne) query.category = { $ne: category_ne };
-    if (isSolved) query.isSolved = isSolved === "true";
-
     const posts = await Post.find(query)
-      .populate("author", "username avatar")
-      .sort({ createdAt: -1 })
-      .limit(20); // Phân trang đơn giản
-    res.json(posts);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+      .populate('author', 'username avatar')
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit))
+      .sort({ createdAt: -1 });
+    res.json({ data: posts });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// Đăng bài mới
 exports.createPost = async (req, res) => {
+  const { title, content, category, grade } = req.body;
   try {
-    const { content, category } = req.body;
-    const attachments = req.files ? req.files.map((file) => file.path) : [];
-
+    const attachments = req.files?.map(file => file.path) || [];
     const post = new Post({
+      title,
       content,
       category,
-      author: req.user._id, // Giả sử user đã được xác thực
+      grade,
+      author: req.user.id,
       attachments,
     });
-
     await post.save();
-    await post.populate("author", "username avatar");
+
+    const user = await User.findById(req.user.id);
+    user.activity.push({
+      date: new Date().toISOString().split('T')[0],
+      count: 1,
+      details: [`Created a post: ${title || 'Untitled'}`],
+    });
+    await user.save();
+
     res.status(201).json(post);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// Thích bài đăng
+exports.deletePost = async (req, res) => {
+  try {
+    const post = await Post.findOneAndDelete({ _id: req.params.id, author: req.user.id });
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+    res.json({ message: 'Post deleted' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 exports.likePost = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
-    if (!post) return res.status(404).json({ message: "Bài đăng không tồn tại" });
-
-    if (!post.likes.includes(req.user._id)) {
-      post.likes.push(req.user._id);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+    if (!post.likes.includes(req.user.id)) {
+      post.likes.push(req.user.id);
       await post.save();
+
+      const user = await User.findById(req.user.id);
+      user.activity.push({
+        date: new Date().toISOString().split('T')[0],
+        count: 1,
+        details: [`Liked a post: ${post.title || 'Untitled'}`],
+      });
+      await user.save();
     }
-    res.json(post);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.json({ message: 'Liked successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// Chia sẻ bài đăng
 exports.sharePost = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
-    if (!post) return res.status(404).json({ message: "Bài đăng không tồn tại" });
-
+    if (!post) return res.status(404).json({ message: 'Post not found' });
     post.shares = (post.shares || 0) + 1;
     await post.save();
-    res.json(post);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
 
-// Lấy bài đã lưu
-exports.getBookmarks = async (req, res) => {
-  try {
-    const bookmarks = await Bookmark.find({ user: req.user._id })
-      .populate({
-        path: "post",
-        populate: { path: "author", select: "username avatar" },
-      });
-    res.json(bookmarks);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Lưu bài đăng
-exports.bookmarkPost = async (req, res) => {
-  try {
-    const { postId } = req.body;
-    const bookmark = new Bookmark({
-      user: req.user._id,
-      post: postId,
+    const user = await User.findById(req.user.id);
+    user.activity.push({
+      date: new Date().toISOString().split('T')[0],
+      count: 1,
+      details: [`Shared a post: ${post.title || 'Untitled'}`],
     });
-    await bookmark.save();
-    await bookmark.populate({
-      path: "post",
-      populate: { path: "author", select: "username avatar" },
+    await user.save();
+
+    res.json({ message: 'Shared successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.addComment = async (req, res) => {
+  const { content } = req.body;
+  try {
+    const post = await Post.findById(req.params.id);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+    post.comments.push({
+      user: req.user.id,
+      content,
+      createdAt: new Date(),
     });
-    res.status(201).json(bookmark);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+    await post.save();
 
-// Lấy thông báo
-exports.getNotifications = async (req, res) => {
-  try {
-    const notifications = await Notification.find({ recipient: req.user._id })
-      .sort({ createdAt: -1 })
-      .limit(20);
-    res.json(notifications);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+    const user = await User.findById(req.user.id);
+    user.activity.push({
+      date: new Date().toISOString().split('T')[0],
+      count: 1,
+      details: [`Commented on a post: ${post.title || 'Untitled'}`],
+    });
+    await user.save();
 
-// Gợi ý "Who to follow"
-exports.getUserSuggestions = async (req, res) => {
-  try {
-    // Giả lập gợi ý: lấy người dùng chưa follow
-    const followedUsers = await Follow.find({ follower: req.user._id }).select("following");
-    const followedIds = followedUsers.map((f) => f.following);
-    const suggestions = await User.find({
-      _id: { $ne: req.user._id, $nin: followedIds },
-    })
-      .select("username avatar bio")
-      .limit(5);
-    res.json(suggestions);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.json({ message: 'Comment added successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };

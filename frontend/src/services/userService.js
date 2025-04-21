@@ -1,219 +1,101 @@
-import api from "./api";
-import { toast } from "react-toastify";
+import api from './api';
 
+// Các hàm hiện có (giữ nguyên)
 export const fetchUserProfile = async (year) => {
-  try {
-    const endpoint = year ? `/users/activity/${year}` : "/users/profile";
-    const res = await api.get(endpoint);
-    if (year && (!res.data.activity || !Array.isArray(res.data.activity))) {
-      return { activity: [], total: 0 };
-    }
-    return res.data;
-  } catch (err) {
-    if (err.response?.status === 401) {
-      toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
-      setTimeout(() => (window.location.href = "/auth/login"), 2000);
-    } else {
-      toast.error(err.response?.data?.message || "Không thể tải dữ liệu hồ sơ!");
-    }
-    throw err;
-  }
+  const response = await api.get(`/users/profile${year ? `?year=${year}` : ''}`);
+  return response.data;
 };
 
 export const updateUserProfile = async (data) => {
+  const response = await api.put('/users/profile', data);
+  return response.data;
+};
+
+export const followUser = async (userId) => {
+  const response = await api.post(`/users/follow/${userId}`);
+  return response.data;
+};
+
+export const unfollowUser = async (userId) => {
+  const response = await api.post(`/users/unfollow/${userId}`);
+  return response.data;
+};
+
+export const fetchFollowers = async () => {
+  const response = await api.get('/users/followers');
+  return response.data;
+};
+
+export const fetchFollowing = async () => {
+  const response = await api.get('/users/following');
+  return response.data;
+};
+
+export const getUserSuggestions = async () => {
+  const response = await api.get('/users/suggestions');
+  return response.data;
+};
+
+// Các hàm mới (thêm vào để hỗ trợ trang Profile)
+export const getProfile = async () => {
   try {
-    const res = await api.put("/users/profile", data);
-    return res.data;
-  } catch (err) {
-    if (err.response?.status === 401) {
-      toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
-      setTimeout(() => (window.location.href = "/auth/login"), 2000);
-    } else {
-      toast.error(err.response?.data?.message || "Không thể cập nhật hồ sơ!");
-    }
-    throw err;
+    const response = await api.get('/users/profile');
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "Không thể tải dữ liệu người dùng!");
   }
 };
 
-// Lấy danh sách followers
-export const fetchFollowers = async (page, limit) => {
+export const getContributions = async (year) => {
   try {
-    const res = await api.get("/users/followers", {
-      params: { page, limit },
-    });
-    return res.data;
-  } catch (err) {
-    if (err.response?.status === 401) {
-      toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
-      setTimeout(() => window.location.href = "/auth/login", 2000);
-      return;
-    }
-    toast.error(err.response?.data?.message || "Không thể tải danh sách followers!");
-    throw err;
+    const response = await api.get(`/users/contributions?year=${year}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "Không thể tải dữ liệu hoạt động!");
   }
 };
 
-// Lấy danh sách following
-export const fetchFollowing = async (page, limit) => {
+export const getContributionActivity = async () => {
   try {
-    const res = await api.get("/users/friends", {
-      params: { page, limit },
-    });
-    return res.data;
-  } catch (err) {
-    if (err.response?.status === 401) {
-      toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
-      setTimeout(() => window.location.href = "/auth/login", 2000);
-      return;
-    }
-    toast.error(err.response?.data?.message || "Không thể tải danh sách following!");
-    throw err;
+    const response = await api.get('/users/contribution-activity');
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "Không thể tải dữ liệu hoạt động chi tiết!");
   }
 };
 
-// Theo dõi người dùng
-export const followUser = async (targetUserId) => {
+export const getScores = async () => {
   try {
-    const res = await api.post(`/users/follow/${targetUserId}`);
-    return res.data;
-  } catch (err) {
-    if (err.response?.status === 401) {
-      toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
-      setTimeout(() => window.location.href = "/auth/login", 2000);
-      return;
-    }
-    toast.error(err.response?.data?.message || "Không thể theo dõi người dùng!");
-    throw err;
+    const response = await api.get('/users/scores');
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "Không thể tải dữ liệu điểm số!");
   }
 };
 
-// Bỏ theo dõi người dùng
-export const unfollowUser = async (targetUserId) => {
+export const getLibrary = async () => {
   try {
-    const res = await api.post(`/users/unfollow/${targetUserId}`);
-    return res.data;
-  } catch (err) {
-    if (err.response?.status === 401) {
-      toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
-      setTimeout(() => window.location.href = "/auth/login", 2000);
-      return;
-    }
-    toast.error(err.response?.data?.message || "Không thể bỏ theo dõi người dùng!");
-    throw err;
+    const response = await api.get('/users/library');
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "Không thể tải dữ liệu thư viện!");
   }
 };
 
-// Lấy thống kê cho student
-export const fetchStudentStats = async () => {
+export const getPosts = async () => {
   try {
-    const res = await api.get("/stats/student");
-    return res.data;
-  } catch (err) {
-    if (err.response?.status === 401) {
-      toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
-      setTimeout(() => window.location.href = "/auth/login", 2000);
-      return;
-    }
-    toast.error(err.response?.data?.message || "Không thể tải thống kê!");
-    throw err;
+    const response = await api.get('/users/posts');
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "Không thể tải dữ liệu bài đăng!");
   }
 };
 
-// Lấy thống kê cho teacher
-export const fetchTeacherStats = async () => {
+export const getCourses = async () => {
   try {
-    const res = await api.get("/stats/teacher");
-    return res.data;
-  } catch (err) {
-    if (err.response?.status === 401) {
-      toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
-      setTimeout(() => window.location.href = "/auth/login", 2000);
-      return;
-    }
-    toast.error(err.response?.data?.message || "Không thể tải thống kê!");
-    throw err;
-  }
-};
-
-// Lấy thống kê cho admin
-export const fetchSystemStats = async () => {
-  try {
-    const res = await api.get("/stats/system");
-    return res.data;
-  } catch (err) {
-    if (err.response?.status === 401) {
-      toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
-      setTimeout(() => window.location.href = "/auth/login", 2000);
-      return;
-    }
-    toast.error(err.response?.data?.message || "Không thể tải thống kê hệ thống!");
-    throw err;
-  }
-};
-
-// Lấy danh sách tất cả người dùng (cho admin)
-export const fetchAllUsers = async (page, limit) => {
-  try {
-    const res = await api.get("/users/all", {
-      params: { page, limit },
-    });
-    return res.data;
-  } catch (err) {
-    if (err.response?.status === 401) {
-      toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
-      setTimeout(() => window.location.href = "/auth/login", 2000);
-      return;
-    }
-    toast.error(err.response?.data?.message || "Không thể tải danh sách người dùng!");
-    throw err;
-  }
-};
-
-// Xóa người dùng (cho admin)
-export const deleteUser = async (userId) => {
-  try {
-    const res = await api.delete(`/users/${userId}`);
-    return res.data;
-  } catch (err) {
-    if (err.response?.status === 401) {
-      toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
-      setTimeout(() => window.location.href = "/auth/login", 2000);
-      return;
-    }
-    toast.error(err.response?.data?.message || "Không thể xóa người dùng!");
-    throw err;
-  }
-};
-
-
-// Cập nhật ảnh avatar
-export const updateAvatar = async (formData) => {
-  try {
-    const res = await api.post("/users/avatar", formData);
-    return res.data;
-  } catch (err) {
-    if (err.response?.status === 401) {
-      toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
-      setTimeout(() => window.location.href = "/auth/login", 2000);
-      return;
-    }
-    toast.error(err.response?.data?.message || "Không thể cập nhật ảnh avatar!");
-    throw err;
-  }
-};
-
-// Lấy dữ liệu hoạt động của người dùng
-export const fetchUserActivity = async (year) => {
-  try {
-    const res = await api.get(`/users/activity/${year}`);
-    return res.data;
-  } catch (err) {
-    if (err.response?.status === 401) {
-      toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!");
-      setTimeout(() => window.location.href = "/auth/login", 2000);
-      return;
-    }
-    toast.error(err.response?.data?.message || "Không thể tải dữ liệu hoạt động!");
-    throw err;
+    const response = await api.get('/users/courses');
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "Không thể tải dữ liệu khóa học!");
   }
 };

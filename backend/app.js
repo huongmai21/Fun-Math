@@ -3,6 +3,8 @@ const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const path = require("path");
+const http = require('http');
+const setupSocket = require('./socket');
 
 // Load env vars
 require("dotenv").config({ path: path.resolve(__dirname, ".env") });
@@ -18,6 +20,10 @@ app.use(
   })
 );
 
+const server = http.createServer(app);
+const io = setupSocket(server);
+
+
 // Middleware
 app.use(cookieParser());
 app.use(express.json());
@@ -28,22 +34,15 @@ app.use(express.static(path.join(__dirname, "..", "frontend", "public")));
 
 const authRoutes = require("./routes/authRoutes");
 const usersRoutes = require("./routes/usersRoutes");
-// const searchRoutes = require("./routes/searchRoutes");
 const newsRoutes = require("./routes/newsRoutes");
 const examRoutes = require("./routes/examRoutes");
 const documentRoutes = require("./routes/documentRoutes");
 const courseRoutes = require("./routes/courseRoutes");
+const postRoutes = require("./routes/postRoutes");
+// const studyCornerRoutes = require("./routes/");
 const studyRoomRoutes = require("./routes/studyRoomRoutes");
 const commentRoutes = require("./routes/commentRoutes");
 
-// // Kiểm tra handler trước khi dùng
-// console.log("authRoutes:", typeof authRoutes);
-// // console.log("searchRoutes:", typeof searchRoutes);
-// console.log("newsRoutes:", typeof newsRoutes);
-// console.log("examRoutes:", typeof examRoutes);
-// console.log("documentRoutes:", typeof documentRoutes);
-// console.log("courseRoutes details:", courseRoutes);
-// console.log("studyRoomRoutes:", typeof studyRoomRoutes);
 
 // Routes
 app.use("/auth", authRoutes);
@@ -53,6 +52,8 @@ app.use("/news", newsRoutes);
 app.use("/exams", examRoutes);
 app.use("/documents", documentRoutes);
 app.use("/courses", courseRoutes);
+app.use('/posts', postRoutes);
+// app.use("/study-corner", studyCornerRoutes);
 app.use("/study-room", studyRoomRoutes);
 app.use("/comments", commentRoutes);
 

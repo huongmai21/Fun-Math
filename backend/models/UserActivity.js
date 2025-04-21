@@ -1,4 +1,3 @@
-// Lứu trữ các hoạt động của người dùng
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
@@ -17,9 +16,13 @@ const userActivitySchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
+  date: {
+    type: String, // Format: YYYY-MM-DD
+    required: true,
+  },
+  count: {
+    type: Number,
+    default: 1, // Số lượng hoạt động trong ngày
   },
 });
 

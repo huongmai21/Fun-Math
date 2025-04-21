@@ -1,28 +1,40 @@
 // routes/examRoutes.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const examController = require('../controllers/examController');
-const authenticateToken = require('../middleware/authMiddleware');
-const checkRole = require('../middleware/roleMiddleware');
+const examController = require("../controllers/examController");
+const authenticateToken = require("../middleware/authMiddleware");
+const checkRole = require("../middleware/roleMiddleware");
 
-router.get('/', authenticateToken, examController.getAllExams);
-router.post(
-  '/create',
+// Routes không yêu cầu quyền cụ thể
+router.get("/", examController.getAllExams);
+router.get(
+  "/recommended",
   authenticateToken,
-  checkRole(['admin', 'teacher']),
+  examController.getRecommendedExams
+);
+router.post("/:id/follow", authenticateToken, examController.followExam);
+router.get("/:id/answers", authenticateToken, examController.getExamAnswers);
+router.get("/leaderboard/global", examController.getGlobalLeaderboard);
+router.get("/:id/leaderboard", examController.getExamLeaderboard);
+
+// Routes yêu cầu quyền teacher hoặc admin
+router.post(
+  "/",
+  authenticateToken,
+  checkRole("teacher", "admin"),
   examController.createExam
 );
-router.get(
-  '/:id',
+router.put(
+  "/:id",
   authenticateToken,
-  checkRole(['student']),
-  examController.getExamById
+  checkRole("teacher", "admin"),
+  examController.updateExam
 );
-router.post(
-  '/submit/:id',
+router.delete(
+  "/:id",
   authenticateToken,
-  checkRole(['student']),
-  examController.submitExam
+  checkRole("teacher", "admin"),
+  examController.deleteExam
 );
 
 module.exports = router;

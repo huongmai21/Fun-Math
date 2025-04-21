@@ -2,21 +2,24 @@
 const express = require("express");
 const router = express.Router();
 const postController = require("../controllers/postController");
-const authMiddleware = require("../middleware/authMiddleware"); // Giả sử có middleware xác thực
+const authMiddleware = require("../middleware/authMiddleware");
 const multer = require("multer");
 
-const upload = multer({ dest: "uploads/" });
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + require('path').extname(file.originalname));
+  },
+});
+const upload = multer({ storage });
 
-// Các route yêu cầu xác thực
-router.use(authMiddleware);
-
-router.get("/", postController.getPosts);
-router.post("/", upload.array("attachments"), postController.createPost);
-router.post("/:id/like", postController.likePost);
-router.post("/:id/share", postController.sharePost);
-router.get("/bookmarks", postController.getBookmarks);
-router.post("/bookmarks", postController.bookmarkPost);
-router.get("/notifications", postController.getNotifications);
-router.get("/users/suggestions", postController.getUserSuggestions);
+router.get('/', authMiddleware, postController.getPosts);
+router.post('/', authMiddleware, upload.array('attachments'), postController.createPost);
+router.delete('/:id', authMiddleware, postController.deletePost);
+router.post('/like/:id', authMiddleware, postController.likePost);
+router.post('/share/:id', authMiddleware, postController.sharePost);
+router.post('/comment/:id', authMiddleware, postController.addComment);
 
 module.exports = router;

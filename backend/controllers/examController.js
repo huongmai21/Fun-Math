@@ -1,27 +1,38 @@
-// controllers/examController.js
-const Exam = require("../models/Exam.js");
-const ExamQuestion = require("../models/ExamQuestion.js");
-const ExamResult = require("../models/ExamResult.js");
-const Notification = require("../models/Notification.js");
+const Exam = require("../models/Exam");
+const ExamResult = require("../models/ExamResult");
+const Notification = require("../models/Notification");
+const User = require("../models/User");
 
-// Lấy tất cả đề thi (có lọc và phân trang)
 exports.getAllExams = async (req, res) => {
   try {
-    const { educationLevel, subject, examType, search } = req.query;
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const {
+      educationLevel,
+      subject,
+      status,
+      difficulty,
+      search,
+      page = 1,
+      limit = 9,
+    } = req.query;
     const skip = (page - 1) * limit;
+    const now = new Date();
 
-    // Xây dựng query
     let query = { isPublic: true };
     if (educationLevel) query.educationLevel = educationLevel;
     if (subject) query.subject = subject;
-    if (examType) query.examType = examType;
+    if (difficulty) query.difficulty = difficulty;
     if (search) {
       query.$or = [
         { title: { $regex: search, $options: "i" } },
         { description: { $regex: search, $options: "i" } },
       ];
+    }
+    if (status) {
+      if (status === "upcoming") query.startTime = { $gt: now };
+      else if (status === "ongoing") {
+        query.startTime = { $lte: now };
+        query.endTime = { $gte: now };
+      } else if (status === "ended") query.endTime = { $lt: now };
     }
 
     const exams = await Exam.find(query)
@@ -49,175 +60,211 @@ exports.getAllExams = async (req, res) => {
   }
 };
 
-// Lấy chi tiết một đề thi
-exports.getExamById = async (req, res) => {
+exports.followExam = async (req, res) => {
   try {
-    const exam = await Exam.findById(req.params.id)
-      .populate("author", "username fullName")
-      .populate("questions");
-
+    const exam = await Exam.findById(req.params.id);
     if (!exam) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy đề thi!",
-      });
+      return res
+        .status(404)
+        .json({ success: false, message: "Không tìm thấy đề thi!" });
     }
 
-    // Kiểm tra quyền xem đề thi
-    if (
-      !exam.isPublic &&
-      exam.author.toString() !== req.user.id &&
-      req.user.role !== "admin" &&
-      req.user.role !== "teacher"
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: "Bạn không có quyền xem đề thi này!",
-      });
+    if (exam.followers.includes(req.user.id)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Bạn đã quan tâm bài thi này!" });
     }
 
-    // Tăng số lượt làm bài
-    exam.attempts += 1;
+    exam.followers.push(req.user.id);
     await exam.save();
 
-    res.status(200).json({
-      success: true,
-      exam,
-    });
+    const reminderTime = new Date(exam.startTime.getTime() - 30 * 60 * 1000);
+    if (reminderTime > new Date()) {
+      const notification = new Notification({
+        recipient: req.user.id,
+        type: "new_exam",
+        title: "Nhắc nhở bài thi",
+        message: `Bài thi "${
+          exam.title
+        }" sẽ bắt đầu lúc ${exam.startTime.toLocaleString()}.`,
+        link: `/exams/${exam._id}`,
+        relatedModel: "Exam",
+        relatedId: exam._id,
+        importance: "high",
+        createdAt: reminderTime,
+      });
+      await notification.save();
+    }
+
+    res
+      .status(200)
+      .json({ success: true, message: "Quan tâm bài thi thành công!" });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Không thể lấy chi tiết đề thi!",
+      message: "Quan tâm bài thi thất bại!",
       error: error.message,
     });
   }
 };
 
-// Tạo đề thi mới (admin và giáo viên)
-exports.createExam = async (req, res) => {
+exports.getExamAnswers = async (req, res) => {
   try {
-    // Kiểm tra quyền hạn
-    if (req.user.role !== "admin" && req.user.role !== "teacher") {
-      return res.status(403).json({
-        success: false,
-        message: "Bạn không có quyền thực hiện hành động này!",
-      });
+    const exam = await Exam.findById(req.params.id).populate("questions");
+    if (!exam) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Không tìm thấy đề thi!" });
     }
 
+    if (exam.endTime > new Date()) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Bài thi chưa kết thúc!" });
+    }
+
+    res.status(200).json({
+      success: true,
+      exam: {
+        title: exam.title,
+        questions: exam.questions,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Không thể lấy đáp án!",
+      error: error.message,
+    });
+  }
+};
+
+exports.getRecommendedExams = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = req.user;
+
+    const examResults = await ExamResult.find({ user: userId }).populate(
+      "exam"
+    );
+
+    const preferredLevels = [
+      ...new Set(examResults.map((result) => result.exam.educationLevel)),
+    ];
+    const preferredSubjects = [
+      ...new Set(examResults.map((result) => result.exam.subject)),
+    ];
+
+    let recommendedExams = await Exam.find({
+      isPublic: true,
+      educationLevel: {
+        $in:
+          preferredLevels.length > 0
+            ? preferredLevels
+            : ["grade1", "university"],
+      },
+      subject: {
+        $in: preferredSubjects.length > 0 ? preferredSubjects : ["math"],
+      },
+      _id: { $nin: examResults.map((result) => result.exam._id) },
+    })
+      .sort({ attempts: -1 })
+      .limit(5);
+
+    if (recommendedExams.length === 0) {
+      recommendedExams = await Exam.find({
+        isPublic: true,
+        educationLevel: user.educationLevel || "university",
+      })
+        .sort({ attempts: -1 })
+        .limit(5);
+    }
+
+    res.status(200).json({
+      success: true,
+      recommendedExams,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Không thể gợi ý bài thi!",
+      error: error.message,
+    });
+  }
+};
+
+exports.createExam = async (req, res) => {
+  try {
     const {
       title,
       description,
       educationLevel,
       subject,
-      examType,
       duration,
-      totalPoints,
-      isPublic,
       questions,
+      startTime,
+      endTime,
+      difficulty,
     } = req.body;
 
-    // Tạo đề thi mới
-    const newExam = new Exam({
+    const exam = new Exam({
       title,
       description,
       author: req.user.id,
       educationLevel,
       subject,
-      examType,
       duration,
-      totalPoints,
-      isPublic: isPublic !== undefined ? isPublic : true,
+      questions,
+      startTime: new Date(startTime),
+      endTime: new Date(endTime),
+      difficulty,
+      isPublic: true,
     });
 
-    // Lưu đề thi
-    await newExam.save();
-
-    // Xử lý câu hỏi (nếu có)
-    if (questions && questions.length > 0) {
-      const savedQuestions = [];
-
-      for (const question of questions) {
-        const newQuestion = new ExamQuestion({
-          questionText: question.questionText,
-          questionType: question.questionType,
-          options: question.options,
-          correctAnswer: question.correctAnswer,
-          explanation: question.explanation,
-          points: question.points,
-          difficulty: question.difficulty,
-          images: question.images,
-          createdBy: req.user.id,
-        });
-
-        const savedQuestion = await newQuestion.save();
-        savedQuestions.push(savedQuestion._id);
-      }
-
-      // Cập nhật đề thi với các ID câu hỏi
-      newExam.questions = savedQuestions;
-      await newExam.save();
-    }
-
+    await exam.save();
     res.status(201).json({
       success: true,
       message: "Tạo đề thi thành công!",
-      exam: newExam,
+      exam,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Tạo đề thi thất bại!",
+      message: "Không thể tạo đề thi!",
       error: error.message,
     });
   }
 };
 
-// Cập nhật đề thi
 exports.updateExam = async (req, res) => {
   try {
-    const {
-      title,
-      description,
-      educationLevel,
-      subject,
-      examType,
-      duration,
-      totalPoints,
-      isPublic,
-    } = req.body;
-
     const exam = await Exam.findById(req.params.id);
     if (!exam) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy đề thi!",
-      });
+      return res
+        .status(404)
+        .json({ success: false, message: "Không tìm thấy đề thi!" });
     }
 
-    // Kiểm tra quyền sửa đề thi
     if (exam.author.toString() !== req.user.id && req.user.role !== "admin") {
-      return res.status(403).json({
-        success: false,
-        message: "Bạn không có quyền sửa đề thi này!",
-      });
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Bạn không có quyền chỉnh sửa đề thi này!",
+        });
     }
+
+    const updatedData = { ...req.body };
+    if (updatedData.startTime)
+      updatedData.startTime = new Date(updatedData.startTime);
+    if (updatedData.endTime)
+      updatedData.endTime = new Date(updatedData.endTime);
 
     const updatedExam = await Exam.findByIdAndUpdate(
       req.params.id,
-      {
-        title,
-        description,
-        educationLevel,
-        subject,
-        examType,
-        duration,
-        totalPoints,
-        isPublic,
-        updatedAt: Date.now(),
-      },
+      updatedData,
       { new: true }
     );
-
     res.status(200).json({
       success: true,
       message: "Cập nhật đề thi thành công!",
@@ -226,318 +273,144 @@ exports.updateExam = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Cập nhật đề thi thất bại!",
+      message: "Không thể cập nhật đề thi!",
       error: error.message,
     });
   }
 };
-
-// Thêm câu hỏi vào đề thi
-exports.addQuestionToExam = async (req, res) => {
-  try {
-    const examId = req.params.id;
-    const exam = await Exam.findById(examId);
-
-    if (!exam) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy đề thi!",
-      });
-    }
-
-    // Kiểm tra quyền sửa đề thi
-    if (exam.author.toString() !== req.user.id && req.user.role !== "admin") {
-      return res.status(403).json({
-        success: false,
-        message: "Bạn không có quyền sửa đề thi này!",
-      });
-    }
-
-    // Tạo câu hỏi mới
-    const newQuestion = new ExamQuestion({
-      ...req.body,
-      createdBy: req.user.id,
-    });
-
-    const savedQuestion = await newQuestion.save();
-
-    // Thêm câu hỏi vào đề thi
-    exam.questions.push(savedQuestion._id);
-    await exam.save();
-
-    res.status(201).json({
-      success: true,
-      message: "Thêm câu hỏi thành công!",
-      question: savedQuestion,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Thêm câu hỏi thất bại!",
-      error: error.message,
-    });
-  }
-};
-
-// Nộp bài thi
-exports.submitExam = async (req, res) => {
-  try {
-    const { examId, answers, startTime, endTime } = req.body;
-
-    // Tìm đề thi
-    const exam = await Exam.findById(examId).populate("questions");
-    if (!exam) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy đề thi!",
-      });
-    }
-
-    // Tính điểm
-    let totalScore = 0;
-    const answersWithResults = [];
-
-    for (const answer of answers) {
-      const question = exam.questions.find(
-        (q) => q._id.toString() === answer.questionId
-      );
-      if (!question) continue;
-
-      let isCorrect = false;
-      let score = 0;
-
-      // Kiểm tra đáp án dựa vào loại câu hỏi
-      if (
-        question.questionType === "multiple-choice" ||
-        question.questionType === "true-false"
-      ) {
-        isCorrect = answer.answer === question.correctAnswer;
-        score = isCorrect ? question.points : 0;
-      } else if (question.questionType === "fill-in") {
-        // Có thể cần xử lý phức tạp hơn cho các loại câu hỏi khác
-        isCorrect =
-          answer.answer.toLowerCase() === question.correctAnswer.toLowerCase();
-        score = isCorrect ? question.points : 0;
-      }
-      // Loại essay cần giáo viên chấm điểm
-
-      answersWithResults.push({
-        question: question._id,
-        userAnswer: answer.answer,
-        isCorrect,
-        score,
-      });
-
-      totalScore += score;
-    }
-
-    // Lưu kết quả bài thi
-    const examResult = new ExamResult({
-      exam: examId,
-      user: req.user.id,
-      answers: answersWithResults,
-      totalScore,
-      startTime,
-      endTime,
-      completed: true,
-    });
-
-    await examResult.save();
-
-    // Tạo thông báo kết quả
-    const notification = new Notification({
-      recipient: req.user.id,
-      type: "grade",
-      title: "Kết quả bài thi",
-      message: `Bạn đã hoàn thành bài thi "${exam.title}" với số điểm ${totalScore}/${exam.totalPoints}.`,
-      link: `/exam-results/${examResult._id}`,
-      relatedModel: "ExamResult",
-      relatedId: examResult._id,
-      importance: "normal",
-    });
-
-    await notification.save();
-
-    res.status(201).json({
-      success: true,
-      message: "Nộp bài thi thành công!",
-      result: {
-        totalScore,
-        maxScore: exam.totalPoints,
-        resultId: examResult._id,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Nộp bài thi thất bại!",
-      error: error.message,
-    });
-  }
-};
-
-// Lấy kết quả bài thi
-exports.getExamResult = async (req, res) => {
-  try {
-    const resultId = req.params.id;
-
-    const result = await ExamResult.findById(resultId)
-      .populate("exam")
-      .populate("user", "username fullName")
-      .populate("answers.question");
-
-    if (!result) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy kết quả bài thi!",
-      });
-    }
-
-    // Kiểm tra quyền truy cập: người dùng hiện tại hoặc admin hoặc giáo viên
-    if (
-      result.user._id.toString() !== req.user.id &&
-      req.user.role !== "admin" &&
-      req.user.role !== "teacher"
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: "Bạn không có quyền xem kết quả bài thi này!",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      result,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Không thể lấy kết quả bài thi!",
-      error: error.message,
-    });
-  }
-};
-
 
 exports.deleteExam = async (req, res) => {
   try {
-    const examId = req.params.examId;
-
-    const exam = await Exam.findById(examId);
+    const exam = await Exam.findById(req.params.id);
     if (!exam) {
-      return res.status(404).json({
-        success: false,
-        message: 'Không tìm thấy kỳ thi!'
-      });
+      return res
+        .status(404)
+        .json({ success: false, message: "Không tìm thấy đề thi!" });
     }
 
-    // Chỉ giáo viên tạo kỳ thi hoặc admin mới được xóa
-    if (
-      exam.createdBy.toString() !== req.user.id &&
-      req.user.role !== 'admin'
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: 'Bạn không có quyền xóa kỳ thi này!'
-      });
+    if (exam.author.toString() !== req.user.id && req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Bạn không có quyền xóa đề thi này!",
+        });
     }
 
-    await Exam.findByIdAndDelete(examId);
-
-    // Xoá tất cả kết quả liên quan đến kỳ thi này
-    await Result.deleteMany({ exam: examId });
-
+    await Exam.findByIdAndDelete(req.params.id);
     res.status(200).json({
       success: true,
-      message: 'Đã xoá kỳ thi và tất cả kết quả liên quan.'
+      message: "Xóa đề thi thành công!",
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Xóa kỳ thi thất bại!',
-      error: error.message
+      message: "Không thể xóa đề thi!",
+      error: error.message,
     });
   }
 };
 
-const getUserExamResults = async (req, res) => {
+exports.getGlobalLeaderboard = async (req, res) => {
   try {
-    const userId =
-      req.user.role === 'student'
-        ? req.user.id
-        : req.params.userId || req.user.id;
+    const { educationLevel, subject, timeRange } = req.query;
 
-    const results = await Result.find({ user: userId })
-      .populate('exam', 'title subject grade')
-      .sort({ createdAt: -1 });
+    let matchQuery = {};
+    if (educationLevel) matchQuery["exam.educationLevel"] = educationLevel;
+    if (subject) matchQuery["exam.subject"] = subject;
+    if (timeRange) {
+      const now = new Date();
+      let startDate;
+      if (timeRange === "weekly") {
+        startDate = new Date(now.setDate(now.getDate() - 7));
+      } else if (timeRange === "monthly") {
+        startDate = new Date(
+          now.setFullYear(now.getFullYear(), now.getMonth() - 1)
+        );
+      }
+      matchQuery.endTime = { $gte: startDate };
+    }
 
-    res.status(200).json({
-      success: true,
-      count: results.length,
-      results
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Không thể lấy kết quả!',
-      error: error.message
-    });
-  }
-};
-
-// Lấy bảng xếp hạng theo điểm cao nhất
-exports.getLeaderboard = async (req, res) => {
-  try {
-    const { examId, subject, educationLevel, limit = 10 } = req.query;
-
-    const matchStage = {};
-    if (examId) matchStage.exam = examId;
-
-    // Nếu cần lọc theo môn hoặc khối thì join với Exam
-    const pipeline = [
-      { $match: matchStage },
+    const leaderboard = await ExamResult.aggregate([
       {
         $lookup: {
-          from: 'exams',
-          localField: 'exam',
-          foreignField: '_id',
-          as: 'examInfo'
-        }
+          from: "exams",
+          localField: "exam",
+          foreignField: "_id",
+          as: "exam",
+        },
       },
-      { $unwind: '$examInfo' },
-      ...(subject ? [{ $match: { 'examInfo.subject': subject } }] : []),
-      ...(educationLevel ? [{ $match: { 'examInfo.educationLevel': educationLevel } }] : []),
+      { $unwind: "$exam" },
+      { $match: matchQuery },
       {
         $group: {
-          _id: '$user',
-          maxScore: { $max: '$totalScore' },
-          exam: { $first: '$exam' }
-        }
+          _id: "$user",
+          totalScore: { $sum: "$totalScore" },
+          totalExams: { $sum: 1 },
+        },
       },
       {
         $lookup: {
-          from: 'users',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'userInfo'
-        }
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "user",
+        },
       },
-      { $unwind: '$userInfo' },
-      { $sort: { maxScore: -1 } },
-      { $limit: parseInt(limit) }
-    ];
+      { $unwind: "$user" },
+      {
+        $project: {
+          username: "$user.username",
+          totalScore: 1,
+          totalExams: 1,
+        },
+      },
+      { $sort: { totalScore: -1 } },
+      { $limit: 10 },
+    ]);
 
-    const leaderboard = await ExamResult.aggregate(pipeline);
+    // Gán huy hiệu cho top 3 người dùng
+    const badgeTypes = ["gold", "silver", "bronze"];
+    for (let i = 0; i < Math.min(3, leaderboard.length); i++) {
+      const user = await User.findById(leaderboard[i]._id);
+      if (!user.badges.some((badge) => badge.type === badgeTypes[i])) {
+        user.badges.push({ type: badgeTypes[i] });
+        await user.save();
+      }
+      leaderboard[i].badge = badgeTypes[i];
+    }
 
     res.status(200).json({
       success: true,
-      leaderboard
+      leaderboard,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Không thể lấy bảng xếp hạng!',
-      error: error.message
+      message: "Không thể lấy bảng xếp hạng!",
+      error: error.message,
+    });
+  }
+};
+
+exports.getExamLeaderboard = async (req, res) => {
+  try {
+    const examId = req.params.id;
+    const leaderboard = await ExamResult.find({ exam: examId })
+      .populate("user", "username")
+      .sort({ totalScore: -1, endTime: 1 })
+      .limit(10)
+      .select("user totalScore endTime");
+
+    res.status(200).json({
+      success: true,
+      leaderboard,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Không thể lấy bảng xếp hạng bài thi!",
+      error: error.message,
     });
   }
 };
