@@ -1,15 +1,99 @@
-// server.js
-const app = require("./app");
-const connectMongoDB = require("./config/mongo");
+const express = require("express");
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
 const path = require("path");
+const http = require('http');
+const setupSocket = require('./socket/socket');
+const connectMongoDB = require("./config/mongo");
+
+// Load env vars
 require("dotenv").config({ path: path.resolve(__dirname, ".env") });
 
-const PORT = process.env.PORT || 3000;
+// Create Express app
+const app = express();
 
-// Kết nối với cơ sở dữ liệu
+app.use(
+  cors({
+    origin: "http://localhost:3001",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+const server = http.createServer(app);
+const io = setupSocket(server);
+
+// Middleware
+app.use(cookieParser());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve static files
+app.use(express.static(path.join(__dirname, "..", "frontend", "public")));
+
+const authRoutes = require("./routes/authRoutes");
+const usersRoutes = require("./routes/usersRoutes");
+const newsRoutes = require("./routes/newsRoutes");
+const examRoutes = require("./routes/examRoutes");
+const documentRoutes = require("./routes/documentRoutes");
+const courseRoutes = require("./routes/courseRoutes");
+const postRoutes = require("./routes/postRoutes");
+// const studyCornerRoutes = require("./routes/");
+const studyRoomRoutes = require("./routes/studyRoomRoutes");
+const commentRoutes = require("./routes/commentRoutes");
+
+// Routes
+app.use("/auth", authRoutes);
+app.use("/users", usersRoutes);
+app.use("/news", newsRoutes);
+app.use("/exams", examRoutes);
+app.use("/documents", documentRoutes);
+app.use("/courses", courseRoutes);
+app.use('/posts', postRoutes);
+// app.use("/study-corner", studyCornerRoutes);
+app.use("/study-room", studyRoomRoutes);
+app.use("/comments", commentRoutes);
+
+// React Router fallback
+app.get("/*", (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "frontend", "public", "index.html"));
+});
+
+// Cloudinary preset endpoint
+app.get("/cloudinary-upload-preset", (req, res) => {
+  try {
+    const preset = {
+      upload_preset: process.env.CLOUDINARY_UPLOAD_PRESET,
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    };
+    res.status(200).json(preset);
+  } catch (error) {
+    console.error("Error fetching Cloudinary preset:", error.message);
+    res.status(500).json({
+      message: "Lỗi khi lấy thông tin Cloudinary",
+      error: error.message,
+    });
+  }
+});
+
+// Log registered routes
+console.log("Registered routes:");
+app._router.stack.forEach((layer) => {
+  if (layer.route) {
+    console.log(`${layer.route.path} => [${Object.keys(layer.route.methods).join(", ")}]`);
+  } else if (layer.name === "router" && layer.handle.stack) {
+    layer.handle.stack.forEach((nested) => {
+      if (nested.route) {
+        console.log(`(nested) ${nested.route.path} => [${Object.keys(nested.route.methods).join(", ")}]`);
+      }
+    });
+  }
+});
+
+// Kết nối MongoDB và khởi động server
 connectMongoDB();
-
-const server = app.listen(PORT, () => {
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
   console.log(`Server đang chạy ở cổng ${PORT}`);
 });
 

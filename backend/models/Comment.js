@@ -12,7 +12,6 @@ const commentSchema = new mongoose.Schema({
   },
   referenceId: {
     type: Schema.Types.ObjectId,
-    Closer,
     required: true,
     refPath: "referenceType",
   },

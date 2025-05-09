@@ -10,7 +10,7 @@ const Navbar = () => {
   const { user, loading } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { theme, toggleTheme } = useContext(ThemeContext); // Sử dụng ThemeContext
+  const { theme, toggleTheme } = useContext(ThemeContext);
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isDocumentsOpen, setIsDocumentsOpen] = useState(false);
@@ -38,13 +38,19 @@ const Navbar = () => {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setIsProfileOpen(false);
       }
-      if (documentsRef.current && !documentsRef.current.contains(event.target)) {
+      if (
+        documentsRef.current &&
+        !documentsRef.current.contains(event.target)
+      ) {
         setIsDocumentsOpen(false);
       }
       if (newsRef.current && !newsRef.current.contains(event.target)) {
         setIsNewsOpen(false);
       }
-      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+      if (
+        notificationsRef.current &&
+        !notificationsRef.current.contains(event.target)
+      ) {
         setIsNotificationsOpen(false);
       }
     };
@@ -68,8 +74,15 @@ const Navbar = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
+  const defaultAvatar =
+    "https://res.cloudinary.com/duyqt3bpy/image/upload/v1746717237/default-avatar_ysrrdy.png";
+
   return (
     <header className="header">
+      <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+      />
       <div className="navbar-container">
         <Link to="/" className="logo">
           <i className="fa-solid fa-bahai"></i> FunMath
@@ -122,6 +135,9 @@ const Navbar = () => {
               </div>
             )}
           </div>
+          <Link to="/courses" className="menu-item">
+            Khóa học
+          </Link>
           {user && (
             <>
               <Link to="/exams" className="menu-item">
@@ -141,6 +157,42 @@ const Navbar = () => {
         <div className="loading">Đang tải...</div>
       ) : user ? (
         <div className="user-actions">
+          <div
+            className="user-info"
+            ref={profileRef}
+            onClick={() => setIsProfileOpen(!isProfileOpen)}
+            onMouseEnter={() => setIsProfileOpen(true)}
+            onMouseLeave={() => setIsProfileOpen(false)}
+          >
+            <div className="avatar">
+              <img
+                src={user.avatar || defaultAvatar}
+                alt="Avatar"
+                onError={(e) => (e.target.src = defaultAvatar)}
+              />
+            </div>
+            <span className="profile-username">{user.username}</span>
+            {isProfileOpen && (
+              <div className="profile-dropdown">
+                <Link to="/users/profile" className="dropdown-item">
+                  Hồ sơ
+                </Link>
+                {(user?.role === "student" || user?.role === "teacher") && (
+                  <Link to="/courses/my-courses" className="dropdown-item">
+                    Khóa học của tôi
+                  </Link>
+                )}
+                {user?.role === "admin" && (
+                  <Link to="/admin" className="dropdown-item">
+                    Quản lý hệ thống
+                  </Link>
+                )}
+                <button onClick={handleLogout} className="dropdown-item logout">
+                  Đăng xuất
+                </button>
+              </div>
+            )}
+          </div>
           <div
             className="notification-container"
             ref={notificationsRef}
@@ -204,40 +256,6 @@ const Navbar = () => {
                     Đóng
                   </button>
                 </div>
-              </div>
-            )}
-          </div>
-          <div
-            className="profile-container"
-            ref={profileRef}
-            onClick={() => setIsProfileOpen(!isProfileOpen)}
-          >
-            <div className="profile-info">
-              <img
-                src={user.avatar || "/assets/images/default-avatar.png"}
-                alt="Avatar"
-                className="profile-avatar"
-              />
-              <span className="profile-username">{user.username}</span>
-            </div>
-            {isProfileOpen && (
-              <div className="profile-dropdown">
-                <Link to="/users/profile" className="dropdown-item">
-                  Hồ sơ
-                </Link>
-                {(user?.role === "student" || user?.role === "teacher") && (
-                  <Link to="/courses/my-courses" className="dropdown-item">
-                    Khóa học của tôi
-                  </Link>
-                )}
-                {user?.role === "admin" && (
-                  <Link to="/admin" className="dropdown-item">
-                    Quản lý hệ thống
-                  </Link>
-                )}
-                <button onClick={handleLogout} className="dropdown-item logout">
-                  Đăng xuất
-                </button>
               </div>
             )}
           </div>

@@ -1,14 +1,13 @@
-// src/App.js
 import React, { useEffect } from "react";
 import {
-  HashRouter  as Router,
+  HashRouter as Router,
   Routes,
   Route,
   useNavigate,
   Navigate,
 } from "react-router-dom";
 import { Provider, useDispatch, useSelector } from "react-redux";
-import { refreshUser, logout } from "./redux/authSlice.js"; // Import logout
+import { refreshUser, logout } from "./redux/authSlice.js";
 import { store } from "./redux/store.js";
 import { ThemeProvider } from "./context/ThemeContext.js";
 
@@ -23,11 +22,11 @@ import TakeExam from "./pages/Exams/TakeExam.jsx";
 import DocumentList from "./pages/Document/DocumentList.jsx";
 import DocumentDetail from "./pages/Document/DocumentDetail.jsx";
 import CreateDocument from "./pages/Document/CreateDocument.jsx";
-// import News from "./pages/News/News.jsx";
 import NewsEducation from "./pages/News/NewsEducation.jsx";
 import NewsMagazine from "./pages/News/NewsMagazine.jsx";
 import Profile from "./pages/Profile/Profile.jsx";
-
+import AdminDashboard from "./pages/Admin/AdminDashboard.jsx";
+import Course from "./pages/Course/Course.jsx";
 import ErrorBoundary from "./components/common/ErrorBoundary.jsx";
 
 import { ToastContainer } from "react-toastify";
@@ -42,7 +41,6 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    // Nếu có token nhưng chưa có user => gọi refreshUser
     if (token && !user) {
       dispatch(refreshUser())
         .unwrap()
@@ -58,12 +56,10 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
   const token = localStorage.getItem("token");
 
-  // Nếu không có user và không có token => điều hướng đến login
   if (!user && !token) {
     return <Navigate to="/auth/login" replace />;
   }
 
-  // Nếu user không có quyền phù hợp
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
     return <Navigate to="/exams" replace />;
   }
@@ -106,9 +102,10 @@ function App() {
               }
             />
 
-            {/* <Route path="/news" element={<News />} /> */}
             <Route path="/news/education" element={<NewsEducation />} />
             <Route path="/news/magazine" element={<NewsMagazine />} />
+
+            <Route path="/courses" element={<Course />} />
 
             <Route
               path="/exams"
@@ -136,7 +133,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
+
             <Route
               path="/study-corner"
               element={
@@ -145,7 +142,6 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            
 
             <Route
               path="/study-room"
@@ -164,6 +160,16 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+
             <Route path="*" element={<div>404 - Page Not Found</div>} />
           </Routes>
         </ErrorBoundary>

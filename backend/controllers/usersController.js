@@ -1,144 +1,139 @@
 const User = require("../models/User");
-const { body, validationResult } = require("express-validator");
+const UserActivity = require("../models/UserActivity");
+const asyncHandler = require("../middleware/asyncHandler");
+const ErrorResponse = require("../utils/errorResponse");
+const cloudinary = require("../config/cloudinary");
 
-
-exports.getProfile = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).populate('followers following');
-    const year = req.query.year || new Date().getFullYear();
-    const activity = user.activity.filter(act => act.date.startsWith(year.toString()));
-    
-    // Tạo dữ liệu cho heatmap (đảm bảo có dữ liệu cho tất cả các ngày trong năm)
-    const startDate = new Date(`${year}-01-01`);
-    const endDate = new Date(`${year}-12-31`);
-    const fullActivity = [];
-    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-      const dateStr = d.toISOString().split('T')[0];
-      const act = activity.find(a => a.date === dateStr) || { date: dateStr, count: 0, details: [] };
-      fullActivity.push({
-        date: act.date,
-        count: act.count,
-        details: act.details,
-      });
-    }
-
-    res.json({ ...user.toObject(), activity: fullActivity, total: activity.reduce((sum, act) => sum + act.count, 0) });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+exports.getProfile = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id).populate("followers following");
+  if (!user) {
+    return next(new ErrorResponse("Người dùng không tồn tại", 404));
   }
-};
+  res.json(user);
+});
 
-exports.updateProfile = async (req, res) => {
-  const { username, email, bio, socialLink } = req.body;
-  try {
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { username, email, bio, socialLink },
-      { new: true }
-    );
-    res.json(user);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+exports.getUserActivity = asyncHandler(async (req, res, next) => {
+  const userId = req.user.id;
+  const year = req.query.year || new Date().getFullYear();
+
+  const activities = await UserActivity.find({
+    userId,
+    date: { $regex: `^${year}` }, // Lọc theo năm
+  });
+
+  // Tạo dữ liệu cho heatmap giống GitHub
+  const startDate = new Date(`${year}-01-01`);
+  const endDate = new Date(`${year}-12-31`);
+  const fullActivity = [];
+  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+    const dateStr = d.toISOString().split("T")[0];
+    const act = activities.find((a) => a.date === dateStr) || {
+      date: dateStr,
+      count: 0,
+      description: [],
+    };
+    fullActivity.push({
+      date: act.date,
+      count: act.count || 0,
+      description: act.description || [],
+    });
   }
-};
 
-exports.followUser = async (req, res) => {
-  try {
-    const userToFollow = await User.findById(req.params.id);
-    const currentUser = await User.findById(req.user.id);
-    if (!userToFollow || !currentUser) return res.status(404).json({ message: 'User not found' });
+  res.status(200).json({
+    activity: fullActivity,
+    total: activities.reduce((sum, act) => sum + (act.count || 0), 0),
+  });
+});
 
-    if (!currentUser.following.includes(userToFollow._id)) {
-      currentUser.following.push(userToFollow._id);
-      userToFollow.followers.push(currentUser._id);
-      await currentUser.save();
-      await userToFollow.save();
+exports.updateProfile = asyncHandler(async (req, res, next) => {
+  const { username, email } = req.body;
+  const user = await User.findById(req.user.id);
 
-      currentUser.activity.push({
-        date: new Date().toISOString().split('T')[0],
-        count: 1,
-        details: [`Followed ${userToFollow.username}`],
-      });
-      await currentUser.save();
-    }
-    res.json({ message: 'Followed successfully' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+  if (!user) {
+    return next(new ErrorResponse("Người dùng không tồn tại", 404));
   }
-};
 
-exports.unfollowUser = async (req, res) => {
-  try {
-    const userToUnfollow = await User.findById(req.params.id);
-    const currentUser = await User.findById(req.user.id);
-    if (!userToUnfollow || !currentUser) return res.status(404).json({ message: 'User not found' });
+  let avatarUrl = user.avatar;
+  if (req.files && req.files.avatar) {
+    const result = await cloudinary.uploader.upload(req.files.avatar[0].path);
+    avatarUrl = result.secure_url;
+  }
 
-    currentUser.following = currentUser.following.filter(id => id.toString() !== userToUnfollow._id.toString());
-    userToUnfollow.followers = userToUnfollow.followers.filter(id => id.toString() !== currentUser._id.toString());
+  user.username = username || user.username;
+  user.email = email || user.email;
+  user.avatar = avatarUrl;
+
+  await user.save();
+
+  res.status(200).json({ success: true, data: user });
+});
+
+exports.followUser = asyncHandler(async (req, res, next) => {
+  const userToFollow = await User.findById(req.params.id);
+  const currentUser = await User.findById(req.user.id);
+  if (!userToFollow || !currentUser) {
+    return next(new ErrorResponse("Người dùng không tồn tại", 404));
+  }
+
+  if (!currentUser.following.includes(userToFollow._id)) {
+    currentUser.following.push(userToFollow._id);
+    userToFollow.followers.push(currentUser._id);
     await currentUser.save();
-    await userToUnfollow.save();
-    res.json({ message: 'Unfollowed successfully' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
+    await userToFollow.save();
 
-exports.getFollowers = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).populate('followers', 'username avatar bio');
-    res.json(user.followers);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-exports.getFollowing = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).populate('following', 'username avatar bio');
-    res.json(user.following);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-exports.getUserSuggestions = async (req, res) => {
-  try {
-    const users = await User.find({ _id: { $ne: req.user.id } })
-      .select('username avatar bio')
-      .limit(5);
-    res.json({ data: users });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-
-exports.getUserActivity = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const year = parseInt(req.params.year);
-
-    // Giả lập dữ liệu hoạt động (thay bằng logic thực tế nếu có)
-    const activities = [
+    await UserActivity.findOneAndUpdate(
       {
-        date: `${year}-01-01`,
-        count: 2,
-        details: [
-          { type: "post", description: "Đã đăng 1 bài viết" },
-          { type: "course", description: "Đã tham gia 1 khóa học" },
-        ],
+        userId: currentUser._id,
+        date: new Date().toISOString().split("T")[0],
+        type: "follow",
       },
-    ];
-
-    res.status(200).json({
-      activity: activities,
-      total: activities.length,
-    });
-  } catch (err) {
-    console.error("Error in getUserActivity:", err);
-    res.status(500).json({
-      message: "Không thể lấy dữ liệu hoạt động",
-      error: err.message,
-    });
+      {
+        $set: { description: `Followed ${userToFollow.username}` },
+        $inc: { count: 1 },
+      },
+      { upsert: true, new: true }
+    );
   }
-};
+  res.json({ message: "Followed successfully" });
+});
+
+exports.unfollowUser = asyncHandler(async (req, res, next) => {
+  const userToUnfollow = await User.findById(req.params.id);
+  const currentUser = await User.findById(req.user.id);
+  if (!userToUnfollow || !currentUser) {
+    return next(new ErrorResponse("Người dùng không tồn tại", 404));
+  }
+
+  currentUser.following = currentUser.following.filter(
+    (id) => id.toString() !== userToUnfollow._id.toString()
+  );
+  userToUnfollow.followers = userToUnfollow.followers.filter(
+    (id) => id.toString() !== currentUser._id.toString()
+  );
+  await currentUser.save();
+  await userToUnfollow.save();
+  res.json({ message: "Unfollowed successfully" });
+});
+
+exports.getFollowers = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id).populate(
+    "followers",
+    "username avatar bio"
+  );
+  res.json(user.followers);
+});
+
+exports.getFollowing = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id).populate(
+    "following",
+    "username avatar bio"
+  );
+  res.json(user.following);
+});
+
+exports.getUserSuggestions = asyncHandler(async (req, res, next) => {
+  const users = await User.find({ _id: { $ne: req.user.id } })
+    .select("username avatar bio")
+    .limit(5);
+  res.json({ data: users });
+});
