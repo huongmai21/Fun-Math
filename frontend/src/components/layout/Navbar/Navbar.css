@@ -14,12 +14,12 @@
 }
 
 body.dark {
-  --background: #2a2f3b; /* Màu nền tối nhẹ */
-  --text-color: #d1d5db; /* Màu chữ sáng nhẹ */
+  --background: #373330; /* Màu nền tối nhẹ */
+  --text-color: #e0e4ea; /* Màu chữ sáng nhẹ */
   --header-bg: rgba(255, 255, 255, 0.1);
   --menu-item-bg: rgba(255, 255, 255, 0.1);
   --dropdown-bg: rgba(255, 255, 255, 0.15);
-  --settings-content-bg: #3b4252; /* Nền settings tối nhẹ */
+  --settings-content-bg: #373330; /* Nền settings tối nhẹ */
   --settings-content-text: #d1d5db;
   --input-bg: #4b5563;
   --input-border: #6b7280;
@@ -30,6 +30,7 @@ body {
   background: var(--background);
   color: var(--text-color);
   transition: background 0.3s ease, color 0.3s ease;
+  font-family: "Inter", sans-serif; /* Sử dụng font Inter */
 }
 
 /* Header */
@@ -44,7 +45,7 @@ body {
   justify-content: space-between;
   align-items: center;
   z-index: 1000;
-  height: 50px;
+  height: 60px; /* Chiều cao cố định */
   box-sizing: border-box;
 }
 
@@ -56,7 +57,7 @@ body {
 .navbar {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 8px; /* Giảm gap để menu gần nhau hơn */
 }
 
 /* Menu Item (Box riêng cho mỗi menu) */
@@ -75,17 +76,17 @@ body {
 
 /* Link trong Navbar */
 .navbar a.menu-item {
-  font-size: 14px;
+  font-size: 15px; /* Giảm cỡ chữ cho cân đối */
   color: #e4e4e4;
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600; /* Font-weight nhẹ hơn cho tinh tế */
 }
 
 /* Dropdown */
 .dropdown {
   position: relative;
   color: #e4e4e4;
-  font-size: 14px;
+  font-size: 15px; /* Đồng bộ với menu-item */
   display: flex;
   align-items: center;
   cursor: pointer;
@@ -95,6 +96,7 @@ body {
   display: flex;
   align-items: center;
   padding-right: 5px;
+  font-weight: 600; /* Đồng bộ với menu-item */
 }
 
 .dropdown .left-icon,
@@ -160,13 +162,72 @@ body {
 .user-actions {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 12px; /* Đồng bộ gap với navbar */
+}
+
+/* User Info (Username and Avatar) */
+.user-info {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #e4e4e4; /* Màu giống menu Tài liệu, Tin tức */
+  cursor: pointer;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ff6f61;
+  flex-shrink: 0;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.user-info span {
+  font-size: 14px;
+}
+
+.profile-username {
+  font-size: 15px; /* Đồng bộ với menu */
+  font-weight: 600; /* Đồng bộ với menu */
+  background: linear-gradient(45deg, #ff6f61, #ff9a8b); /* Gradient màu */
+  -webkit-background-clip: text; /* Cắt nền gradient vào chữ */
+  -webkit-text-fill-color: transparent; /* Làm chữ trong suốt để hiển thị gradient */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px; /* Điều chỉnh để không vượt quá khung */
+}
+
+/* Profile Dropdown */
+.profile-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--dropdown-bg);
+  color: #e4e4e4;
+  border-radius: 5px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  min-width: 120px;
+  z-index: 1000;
 }
 
 /* Notification Container */
 .notification-container {
   position: relative;
   cursor: pointer;
+  margin-left: 10px;
 }
 
 .notification-icon {
@@ -225,6 +286,7 @@ body {
 /* Settings Container */
 .settings-container {
   position: relative;
+  margin-left: 10px;
 }
 
 .settings-icon {
@@ -303,43 +365,7 @@ body {
   cursor: pointer;
 }
 
-/* Profile Container */
-.profile-container {
-  position: relative;
-  cursor: pointer;
-}
-
-.profile-info {
-  display: flex;
-  align-items: center;
-}
-
-.profile-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  margin-right: 8px;
-  border: 2px solid #ff6f61;
-}
-
-.profile-username {
-  font-size: 14px;
-  color: #e4e4e4;
-}
-
 /* Dropdown Menu */
-.profile-dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  background: var(--dropdown-bg);
-  color: #e4e4e4;
-  border-radius: 5px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  min-width: 120px;
-  z-index: 1000;
-}
-
 .dropdown-item {
   display: block;
   padding: 8px 12px;
@@ -385,26 +411,47 @@ body {
 
 /* Logo */
 .logo {
-  font-size: 22px;
+  font-family: "Inter", sans-serif;
+  font-size: 24px; /* Giảm nhẹ để cân đối */
   color: #e4e4e4;
   text-decoration: none;
   font-weight: 700;
   display: flex;
-  align-items: center;
-  margin-right: 30px;
-  transition: transform 0.3s ease;
+  alignアイテム: center;
+  margin-right: 25px; /* Giảm margin để cân đối */
+  transition: transform 0.3s ease, background 0.3s ease;
+  background: linear-gradient(
+    135deg,
+    #ffcccb,
+    #ff6c37,
+    #ff6f61,
+    #c42b1c
+  ); /* Gradient sáng */
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2); /* Giảm bóng để tinh tế */
 }
 
 .logo:hover {
-  transform: scale(1.05);
+  transform: scale(1.05); /* Giảm scale để nhẹ nhàng hơn */
+  background: linear-gradient(
+    135deg,
+    #c42b1c,
+    #ff6f61,
+    #ff6c37,
+    #ffcccb
+  ); /* Đổi hướng gradient khi hover */
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .logo i {
-  margin-right: 8px;
-  font-size: 24px;
-  background: linear-gradient(45deg, #ff6f61, #ff9a8b);
+  margin-right: 6px;
+  font-size: 26px; /* Giảm nhẹ để cân đối */
+  background: linear-gradient(135deg, #ffcccb, #ff6c37, #ff6f61, #c42b1c);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 /* Loading */
@@ -438,7 +485,7 @@ body {
   .navbar {
     display: none;
     position: absolute;
-    top: 50px;
+    top: 60px;
     left: 0;
     width: 100%;
     background: var(--dropdown-bg);
@@ -464,10 +511,39 @@ body {
     padding-left: 20px;
   }
 
-  .user-actions,
-  .auth-links {
-    margin: 8px 20px;
-    display: flex;
-    gap: 15px;
+  .user-actions {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+  }
+
+  .user-info,
+  .notification-container,
+  .settings-container {
+    margin-left: 0;
+  }
+
+  .profile-dropdown {
+    right: auto;
+    left: 0;
+  }
+
+  .profile-username {
+    font-size: 14px; /* Giảm cỡ chữ trên mobile */
+    background: linear-gradient(
+      45deg,
+      #ff6f61,
+      #ff9a8b
+    ); /* Gradient trên mobile */
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .logo {
+    font-size: 20px; /* Giảm kích thước logo trên mobile */
+  }
+
+  .logo i {
+    font-size: 22px; /* Giảm kích thước icon trên mobile */
   }
 }

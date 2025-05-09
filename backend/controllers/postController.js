@@ -1,126 +1,117 @@
-const Post = require('../models/Post');
-const User = require('../models/User');
+const Post = require("../models/Post");
+const asyncHandler = require("../middleware/asyncHandler");
+const ErrorResponse = require("../utils/errorResponse");
+const cloudinary = require("../config/cloudinary");
 
-exports.getPosts = async (req, res) => {
-  const { category, category_ne, page = 1, limit = 5 } = req.query;
-  try {
-    const query = { author: req.user.id };
-    if (category) query.category = category;
-    if (category_ne) query.category = { $ne: category_ne };
-    const posts = await Post.find(query)
-      .populate('author', 'username avatar')
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit))
-      .sort({ createdAt: -1 });
-    res.json({ data: posts });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+// Get all posts with optional filters
+exports.getPosts = asyncHandler(async (req, res, next) => {
+  const { category, content, bookmarked, page = 1, limit = 5 } = req.query;
+  const query = {};
+
+  if (category) query.category = category;
+  if (category === "question" && req.query.category_ne) {
+    query.category = { $ne: "question" };
   }
-};
+  if (content) query.content = { $regex: content, $options: "i" };
+  if (bookmarked) query.bookmarks = req.user._id;
 
-exports.createPost = async (req, res) => {
-  const { title, content, category, grade } = req.body;
-  try {
-    const attachments = req.files?.map(file => file.path) || [];
-    const post = new Post({
-      title,
-      content,
-      category,
-      grade,
-      author: req.user.id,
-      attachments,
-    });
-    await post.save();
+  const posts = await Post.find(query)
+    .populate("author", "username avatar")
+    .populate("comments.user", "username avatar")
+    .skip((page - 1) * limit)
+    .limit(parseInt(limit))
+    .sort({ createdAt: -1 });
 
-    const user = await User.findById(req.user.id);
-    user.activity.push({
-      date: new Date().toISOString().split('T')[0],
-      count: 1,
-      details: [`Created a post: ${title || 'Untitled'}`],
-    });
-    await user.save();
+  res.status(200).json({ success: true, data: posts });
+});
 
-    res.status(201).json(post);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
+// Create a new post
+exports.createPost = asyncHandler(async (req, res, next) => {
+  const { title, content, category, grade, subject } = req.body;
+  const attachments = [];
 
-exports.deletePost = async (req, res) => {
-  try {
-    const post = await Post.findOneAndDelete({ _id: req.params.id, author: req.user.id });
-    if (!post) return res.status(404).json({ message: 'Post not found' });
-    res.json({ message: 'Post deleted' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-exports.likePost = async (req, res) => {
-  try {
-    const post = await Post.findById(req.params.id);
-    if (!post) return res.status(404).json({ message: 'Post not found' });
-    if (!post.likes.includes(req.user.id)) {
-      post.likes.push(req.user.id);
-      await post.save();
-
-      const user = await User.findById(req.user.id);
-      user.activity.push({
-        date: new Date().toISOString().split('T')[0],
-        count: 1,
-        details: [`Liked a post: ${post.title || 'Untitled'}`],
-      });
-      await user.save();
+  if (req.files) {
+    for (const file of req.files) {
+      const result = await cloudinary.uploader.upload(file.path);
+      attachments.push(result.secure_url);
     }
-    res.json({ message: 'Liked successfully' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
   }
-};
 
-exports.sharePost = async (req, res) => {
-  try {
-    const post = await Post.findById(req.params.id);
-    if (!post) return res.status(404).json({ message: 'Post not found' });
-    post.shares = (post.shares || 0) + 1;
-    await post.save();
+  const post = await Post.create({
+    title,
+    content,
+    category: category || "general",
+    grade,
+    subject,
+    author: req.user._id,
+    attachments,
+  });
 
-    const user = await User.findById(req.user.id);
-    user.activity.push({
-      date: new Date().toISOString().split('T')[0],
-      count: 1,
-      details: [`Shared a post: ${post.title || 'Untitled'}`],
-    });
-    await user.save();
+  res.status(201).json({ success: true, data: post });
+});
 
-    res.json({ message: 'Shared successfully' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+// Like a post
+exports.likePost = asyncHandler(async (req, res, next) => {
+  const post = await Post.findById(req.params.id);
+  if (!post) {
+    return next(new ErrorResponse("Bài đăng không tồn tại", 404));
   }
-};
 
-exports.addComment = async (req, res) => {
+  if (post.likes.includes(req.user._id)) {
+    post.likes = post.likes.filter(
+      (id) => id.toString() !== req.user._id.toString()
+    );
+  } else {
+    post.likes.push(req.user._id);
+  }
+
+  await post.save();
+  res.status(200).json({ success: true, data: post });
+});
+
+// Add a comment to a post
+exports.addComment = asyncHandler(async (req, res, next) => {
   const { content } = req.body;
-  try {
-    const post = await Post.findById(req.params.id);
-    if (!post) return res.status(404).json({ message: 'Post not found' });
-    post.comments.push({
-      user: req.user.id,
-      content,
-      createdAt: new Date(),
-    });
-    await post.save();
+  const post = await Post.findById(req.params.id);
 
-    const user = await User.findById(req.user.id);
-    user.activity.push({
-      date: new Date().toISOString().split('T')[0],
-      count: 1,
-      details: [`Commented on a post: ${post.title || 'Untitled'}`],
-    });
-    await user.save();
-
-    res.json({ message: 'Comment added successfully' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+  if (!post) {
+    return next(new ErrorResponse("Bài đăng không tồn tại", 404));
   }
-};
+
+  post.comments.push({ user: req.user._id, content });
+  await post.save();
+
+  res.status(200).json({ success: true, data: post });
+});
+
+// Share a post
+exports.sharePost = asyncHandler(async (req, res, next) => {
+  const post = await Post.findById(req.params.id);
+  if (!post) {
+    return next(new ErrorResponse("Bài đăng không tồn tại", 404));
+  }
+
+  post.shares = (post.shares || 0) + 1;
+  await post.save();
+
+  res.status(200).json({ success: true, data: post });
+});
+
+// Bookmark a post
+exports.bookmarkPost = asyncHandler(async (req, res, next) => {
+  const post = await Post.findById(req.params.id);
+  if (!post) {
+    return next(new ErrorResponse("Bài đăng không tồn tại", 404));
+  }
+
+  if (post.bookmarks.includes(req.user._id)) {
+    post.bookmarks = post.bookmarks.filter(
+      (id) => id.toString() !== req.user._id.toString()
+    );
+  } else {
+    post.bookmarks.push(req.user._id);
+  }
+
+  await post.save();
+  res.status(200).json({ success: true, data: post });
+});

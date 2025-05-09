@@ -1,26 +1,27 @@
-// models/Document.js
-const mongoose = require('mongoose');
-const { Schema } = mongoose;
+const mongoose = require("mongoose");
 
 const documentSchema = new mongoose.Schema({
   title: { type: String, required: true },
-  description: { type: String },
+  description: String,
   fileUrl: { type: String, required: true },
-  thumbnail: { type: String },
-  author: { type: Schema.Types.ObjectId, ref: 'User' },
-  educationLevel: { 
-    type: String, 
-    enum: ['primary', 'secondary', 'highschool', 'university'] 
+  thumbnail: String,
+  educationLevel: { type: String, required: true },
+  grade: String,
+  subject: String,
+  documentType: { type: String, required: true },
+  tags: [String],
+  content: String, // Nội dung HTML chứa văn bản, công thức toán học
+  images: [String], // Danh sách URL hình ảnh
+  videoUrl: String, // URL video nhúng
+  uploadedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
   },
-  subject: { type: String },
-  documentType: { 
-    type: String, 
-    enum: ['textbook', 'exercise', 'reference', 'other'] 
-  },
-  tags: [{ type: String }],
+  status: { type: String, enum: ["draft", "published"], default: "draft" },
+  views: { type: Number, default: 0 },
+  downloads: { type: Number, default: 0 },
   uploadedAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
-  downloads: { type: Number, default: 0 }
 });
 
-module.exports =  mongoose.model('Document', documentSchema);
+module.exports = mongoose.model("Document", documentSchema);

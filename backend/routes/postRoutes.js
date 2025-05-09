@@ -1,25 +1,23 @@
-// routes/postRoutes.js
 const express = require("express");
 const router = express.Router();
-const postController = require("../controllers/postController");
-const authMiddleware = require("../middleware/authMiddleware");
-const multer = require("multer");
+const {
+  getPosts,
+  createPost,
+  likePost,
+  addComment,
+  sharePost,
+  bookmarkPost,
+} = require("../controllers/postsController");
+const { protect } = require("../middleware/authMiddleware");
+const upload = require("../middleware/multer");
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + require('path').extname(file.originalname));
-  },
-});
-const upload = multer({ storage });
-
-router.get('/', authMiddleware, postController.getPosts);
-router.post('/', authMiddleware, upload.array('attachments'), postController.createPost);
-router.delete('/:id', authMiddleware, postController.deletePost);
-router.post('/like/:id', authMiddleware, postController.likePost);
-router.post('/share/:id', authMiddleware, postController.sharePost);
-router.post('/comment/:id', authMiddleware, postController.addComment);
+router
+  .route("/")
+  .get(protect, getPosts)
+  .post(protect, upload.array("attachments"), createPost);
+router.route("/:id/like").put(protect, likePost);
+router.route("/:id/comment").put(protect, addComment);
+router.route("/:id/share").put(protect, sharePost);
+router.route("/:id/bookmark").put(protect, bookmarkPost);
 
 module.exports = router;

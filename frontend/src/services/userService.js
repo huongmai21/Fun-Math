@@ -1,32 +1,33 @@
 import api from './api';
 
-// Các hàm hiện có (giữ nguyên)
 export const fetchUserProfile = async (year) => {
   const response = await api.get(`/users/profile${year ? `?year=${year}` : ''}`);
   return response.data;
 };
 
-export const updateUserProfile = async (data) => {
-  const response = await api.put('/users/profile', data);
+export const updateProfile = async (data) => {
+  const response = await api.put('/users/profile', data, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
   return response.data;
 };
 
 export const followUser = async (userId) => {
-  const response = await api.post(`/users/follow/${userId}`);
+  const response = await api.put(`/users/${userId}/follow`);
   return response.data;
 };
 
 export const unfollowUser = async (userId) => {
-  const response = await api.post(`/users/unfollow/${userId}`);
+  const response = await api.put(`/users/${userId}/unfollow`);
   return response.data;
 };
 
-export const fetchFollowers = async () => {
+export const getFollowers = async () => {
   const response = await api.get('/users/followers');
   return response.data;
 };
 
-export const fetchFollowing = async () => {
+export const getFollowing = async () => {
   const response = await api.get('/users/following');
   return response.data;
 };
@@ -36,7 +37,6 @@ export const getUserSuggestions = async () => {
   return response.data;
 };
 
-// Các hàm mới (thêm vào để hỗ trợ trang Profile)
 export const getProfile = async () => {
   try {
     const response = await api.get('/users/profile');
@@ -48,19 +48,10 @@ export const getProfile = async () => {
 
 export const getContributions = async (year) => {
   try {
-    const response = await api.get(`/users/contributions?year=${year}`);
+    const response = await api.get(`/users/activity${year ? `?year=${year}` : ''}`);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || "Không thể tải dữ liệu hoạt động!");
-  }
-};
-
-export const getContributionActivity = async () => {
-  try {
-    const response = await api.get('/users/contribution-activity');
-    return response.data;
-  } catch (error) {
-    throw new Error(error.response?.data?.message || "Không thể tải dữ liệu hoạt động chi tiết!");
   }
 };
 
